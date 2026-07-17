@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>עברית ישרה · צ׳אט</title>
+<style>
+  :root {
+    --bg: #F0EEE6;
+    --panel: #FBFAF7;
+    --bubble: #FFFFFF;
+    --ink: #2B2A27;
+    --ink-soft: #6B665C;
+    --faint: #A39D90;
+    --border: #E6E2D6;
+    --border-soft: #ECE9DF;
+    --coral: #C96442;
+    --coral-strong: #B0512F;
+    --coral-tint: #F5E7DF;
+    --sans: system-ui, -apple-system, "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --shadow: 0 1px 2px rgba(43,42,39,.05), 0 12px 28px -14px rgba(43,42,39,.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #262624; --panel: #2C2B29; --bubble: #33322F; --ink: #F4F2EC;
+      --ink-soft: #B8B2A6; --faint: #837D71; --border: #3C3A36; --border-soft: #383632;
+      --coral: #D97757; --coral-strong: #E08A6C; --coral-tint: #3A2E28;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 14px 30px -16px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg:#F0EEE6; --panel:#FBFAF7; --bubble:#FFFFFF; --ink:#2B2A27; --ink-soft:#6B665C;
+    --faint:#A39D90; --border:#E6E2D6; --border-soft:#ECE9DF; --coral:#C96442; --coral-strong:#B0512F; --coral-tint:#F5E7DF;
+    --shadow: 0 1px 2px rgba(43,42,39,.05), 0 12px 28px -14px rgba(43,42,39,.18);
+  }
+  :root[data-theme="dark"] {
+    --bg:#262624; --panel:#2C2B29; --bubble:#33322F; --ink:#F4F2EC; --ink-soft:#B8B2A6;
+    --faint:#837D71; --border:#3C3A36; --border-soft:#383632; --coral:#D97757; --coral-strong:#E08A6C; --coral-tint:#3A2E28;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 14px 30px -16px rgba(0,0,0,.5);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased; height: 100dvh; display: flex; flex-direction: column;
+  }
+
+  /* Header */
+  header {
+    display: flex; align-items: center; gap: 10px; justify-content: center;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 5;
+  }
+  .logo { width: 22px; height: 22px; flex: none; }
+  .wordmark { font-size: 17px; font-weight: 650; letter-spacing: .01em; }
+  .wordmark span { color: var(--coral); }
+
+  /* Conversation */
+  .scroll { flex: 1; overflow-y: auto; }
+  .thread {
+    max-width: 760px; margin: 0 auto; padding: 26px 18px 30px;
+    display: flex; flex-direction: column; gap: 26px;
+  }
+
+  .empty {
+    margin: min(16vh, 120px) auto 0; text-align: center; color: var(--ink-soft); max-width: 34ch;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+  }
+  .empty .spark { width: 40px; height: 40px; opacity: .9; }
+  .empty h2 { margin: 0; font-size: 20px; font-weight: 650; color: var(--ink); }
+  .empty p { margin: 0; font-size: 15px; line-height: 1.6; }
+
+  .msg { display: flex; gap: 13px; align-items: flex-start; }
+  .avatar {
+    width: 28px; height: 28px; flex: none; border-radius: 7px; margin-top: 2px;
+    display: grid; place-items: center; background: var(--coral-tint);
+  }
+  .avatar svg { width: 18px; height: 18px; }
+  .bubble {
+    background: var(--bubble); border: 1px solid var(--border-soft); border-radius: 16px;
+    padding: 4px 18px; box-shadow: var(--shadow); flex: 1; min-width: 0;
+    font-size: 16px; line-height: 1.72; color: var(--ink);
+    direction: rtl; text-align: right; overflow-wrap: break-word;
+  }
+  .bubble > :first-child { margin-top: 14px; }
+  .bubble > :last-child { margin-bottom: 14px; }
+  .bubble p { margin: 0 0 .85em; }
+  .bubble h1,.bubble h2,.bubble h3 { line-height: 1.3; margin: 1.1em 0 .5em; font-weight: 700; }
+  .bubble h1 { font-size: 1.4em; } .bubble h2 { font-size: 1.24em; } .bubble h3 { font-size: 1.1em; }
+  .bubble ul, .bubble ol { margin: .3em 0 .95em; padding-right: 1.5em; padding-left: 0; }
+  .bubble li { margin: .28em 0; }
+  .bubble li::marker { color: var(--coral); }
+  .bubble strong { font-weight: 700; }
+  .bubble a { color: var(--coral); }
+  .bubble code {
+    font-family: var(--mono); font-size: .87em; background: var(--coral-tint);
+    border-radius: 5px; padding: 1px 5px; direction: ltr; unicode-bidi: embed;
+  }
+  .bubble pre {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 11px;
+    padding: 13px 15px; overflow-x: auto; direction: ltr; text-align: left; margin: 0 0 .95em;
+  }
+  .bubble pre code { background: none; padding: 0; }
+  .bubble blockquote {
+    margin: 0 0 .9em; padding: 3px 15px 3px 0; border-right: 3px solid var(--coral);
+    color: var(--ink-soft);
+  }
+  .bubble hr { border: 0; border-top: 1px solid var(--border); margin: 1.1em 0; }
+
+  /* Composer */
+  .composer-wrap {
+    position: sticky; bottom: 0; padding: 12px 18px calc(16px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--bg) 62%, transparent);
+  }
+  .composer {
+    max-width: 760px; margin: 0 auto; background: var(--bubble);
+    border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow);
+    display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 10px;
+    transition: border-color .15s;
+  }
+  .composer:focus-within { border-color: var(--coral); }
+  textarea {
+    flex: 1; border: 0; resize: none; background: transparent; color: var(--ink);
+    font-family: var(--sans); font-size: 16px; line-height: 1.6; padding: 9px 8px;
+    max-height: 40vh; outline: none; direction: rtl; text-align: right;
+  }
+  textarea::placeholder { color: var(--faint); }
+  .btn {
+    flex: none; -webkit-appearance: none; appearance: none; border: 0; cursor: pointer;
+    border-radius: 13px; display: grid; place-items: center; transition: background .15s, transform .08s, opacity .15s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+  .btn-paste {
+    height: 42px; padding: 0 15px; gap: 8px; background: var(--coral); color: #fff;
+    font-family: var(--sans); font-size: 15px; font-weight: 650; grid-auto-flow: column;
+  }
+  .btn-paste:hover { background: var(--coral-strong); }
+  .btn-paste svg { stroke: #fff; }
+  .hint {
+    max-width: 760px; margin: 8px auto 0; text-align: center; color: var(--faint); font-size: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  .msg { animation: rise .28s ease both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+  <header>
+    <svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><g fill="var(--coral)"><path d="M50 4l7 30 22-22-15 27 30-7-30 7 15 27-22-22-7 30-7-30-22 22 15-27-30 7 30-7-15-27 22 22z"/></g></svg>
+    <span class="wordmark">עברית <span>ישרה</span></span>
+  </header>
+
+  <div class="scroll" id="scroll">
+    <div class="thread" id="thread">
+      <div class="empty" id="empty">
+        <svg class="spark" viewBox="0 0 100 100" aria-hidden="true"><path fill="var(--coral)" d="M50 4l7 30 22-22-15 27 30-7-30 7 15 27-22-22-7 30-7-30-22 22 15-27-30 7 30-7-15-27 22 22z"/></svg>
+        <h2>הדביקו הודעה מ‑Claude</h2>
+        <p>היא תופיע כאן ישר וברור, מימין לשמאל — בדיוק כמו שיחה רגילה.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="composer-wrap">
+    <div class="composer">
+      <textarea id="input" dir="auto" rows="1" placeholder="הדביקו כאן, או לחצו על כפתור ההדבקה…"></textarea>
+      <button class="btn btn-paste" id="paste" title="הדבקה מהלוח">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+        הדבקה
+      </button>
+    </div>
+    <p class="hint">Enter לשליחה · Shift+Enter לשורה חדשה</p>
+  </div>
+
+<script>
+(function () {
+  const thread = document.getElementById('thread');
+  const empty = document.getElementById('empty');
+  const scroll = document.getElementById('scroll');
+  const input = document.getElementById('input');
+  const pasteBtn = document.getElementById('paste');
+
+  const AVATAR = '<svg viewBox="0 0 100 100" aria-hidden="true"><path fill="var(--coral)" d="M50 4l7 30 22-22-15 27 30-7-30 7 15 27-22-22-7 30-7-30-22 22 15-27-30 7 30-7-15-27 22 22z"/></svg>';
+
+  function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  function inline(text){
+    const codes=[];
+    text=text.replace(/`([^`]+)`/g,(m,c)=>{codes.push(c);return ' '+(codes.length-1)+' ';});
+    text=escapeHtml(text);
+    text=text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+    text=text.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+    text=text.replace(/__([^_]+)__/g,'<strong>$1</strong>');
+    text=text.replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>');
+    text=text.replace(/ (\d+) /g,(m,i)=>'<code>'+escapeHtml(codes[+i])+'</code>');
+    return text;
+  }
+
+  function renderMarkdown(raw){
+    const lines=raw.replace(/\r\n/g,'\n').split('\n');
+    let html='',i=0,para=[],list=null;
+    const flush=()=>{if(para.length){html+='<p>'+inline(para.join(' '))+'</p>';para=[];}};
+    const closeList=()=>{if(list){html+='</'+list+'>';list=null;}};
+    while(i<lines.length){
+      let line=lines[i];
+      if(/^```/.test(line)){flush();closeList();const buf=[];i++;while(i<lines.length&&!/^```/.test(lines[i])){buf.push(lines[i]);i++;}i++;html+='<pre><code>'+escapeHtml(buf.join('\n'))+'</code></pre>';continue;}
+      const h=line.match(/^(#{1,4})\s+(.*)$/);
+      if(h){flush();closeList();const l=Math.min(h[1].length,3);html+='<h'+l+'>'+inline(h[2])+'</h'+l+'>';i++;continue;}
+      if(/^>\s?/.test(line)){flush();closeList();const buf=[];while(i<lines.length&&/^>\s?/.test(lines[i])){buf.push(lines[i].replace(/^>\s?/,''));i++;}html+='<blockquote>'+inline(buf.join(' '))+'</blockquote>';continue;}
+      const ul=line.match(/^\s*[-*+]\s+(.*)$/);
+      if(ul){flush();if(list!=='ul'){closeList();html+='<ul>';list='ul';}html+='<li>'+inline(ul[1])+'</li>';i++;continue;}
+      const ol=line.match(/^\s*\d+[.)]\s+(.*)$/);
+      if(ol){flush();if(list!=='ol'){closeList();html+='<ol>';list='ol';}html+='<li>'+inline(ol[1])+'</li>';i++;continue;}
+      if(/^\s*([-*_])\1{2,}\s*$/.test(line)){flush();closeList();html+='<hr>';i++;continue;}
+      if(line.trim()===''){flush();closeList();i++;continue;}
+      para.push(line.trim());i++;
+    }
+    flush();closeList();
+    return html;
+  }
+
+  function addMessage(raw){
+    if(!raw||!raw.trim())return;
+    if(empty){empty.remove();}
+    const msg=document.createElement('div');
+    msg.className='msg';
+    const av=document.createElement('div');
+    av.className='avatar'; av.innerHTML=AVATAR;
+    const bubble=document.createElement('div');
+    bubble.className='bubble';
+    bubble.innerHTML=renderMarkdown(raw);
+    msg.appendChild(av); msg.appendChild(bubble);
+    thread.appendChild(msg);
+    scroll.scrollTo({top:scroll.scrollHeight,behavior:'smooth'});
+  }
+
+  function autosize(){ input.style.height='auto'; input.style.height=Math.min(input.scrollHeight, window.innerHeight*0.4)+'px'; }
+
+  function send(){
+    const v=input.value;
+    if(!v.trim())return;
+    addMessage(v);
+    input.value=''; autosize(); input.focus();
+  }
+
+  pasteBtn.addEventListener('click', async ()=>{
+    try{
+      const text=await navigator.clipboard.readText();
+      if(text && text.trim()){ addMessage(text); }
+      else { input.focus(); }
+    }catch(e){ input.focus(); }
+  });
+
+  input.addEventListener('input', autosize);
+  input.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+  });
+
+  autosize();
+})();
+</script>
+</body>
+</html>
