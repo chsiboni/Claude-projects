@@ -12,6 +12,11 @@ npm start
 
 ואז נכנסים ל‑http://localhost:3000
 
+## בונוס: NEON SERPENT 🐍
+
+משחק סנייק קלאסי בעיצוב ניאון מודרני — קובץ עצמאי אחד (`snake.html`) בלי תלויות.
+זמין בכתובת `/snake` כשהשרת רץ, או פשוט פותחים את `snake.html` ישירות בדפדפן.
+
 ## פריסה ב‑Railway
 
 1. נכנסים ל‑[railway.app](https://railway.app) ומתחברים עם GitHub.

@@ -21,6 +21,7 @@ const server = http.createServer((req, res) => {
   // Strip query string and normalize; default to index.html.
   let urlPath = decodeURIComponent((req.url || "/").split("?")[0]);
   if (urlPath === "/") urlPath = "/index.html";
+  if (urlPath === "/snake") urlPath = "/snake.html";
 
   // Prevent path traversal.
   const filePath = path.join(ROOT, path.normalize(urlPath));
