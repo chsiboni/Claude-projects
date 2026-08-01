@@ -392,6 +392,7 @@
   let stepAccum, lastTime, deathAnim;
   let particles = [], floaters = [], eatPulse = 0, appleAngle = 0;
   let time = 0, deathTimeout = null;
+  let trail = [], visualLen = 0;
 
   best = +(localStorage.getItem('neon-serpent-best') || 0);
   document.getElementById('best-value').textContent = best;
@@ -413,6 +414,7 @@
     goldFood = null; goldTimer = 0;
     particles = []; floaters = [];
     deathAnim = 0;
+    rebuildTrail();
     placeFood();
     updateHud();
   }
@@ -684,69 +686,212 @@
     ctx.restore();
   }
 
-  function drawSnake(t) {
-    if (!snake || snake.length < 2) return;
+  /* ---- continuous body path -------------------------------------------
+     The grid drives the rules; the drawing follows a running trail of the
+     head's real pixel positions. Body length is an arc length along that
+     trail, so growth and turns read as one flowing motion instead of a
+     chain of cells snapping into place. */
+
+  function dist(a, b) { return Math.hypot(b.x - a.x, b.y - a.y); }
+
+  function trailStep() { return Math.max(1.2, CELL * 0.11); }
+
+  function bodyLength() { return Math.max(CELL, (snake.length - 0.55) * CELL); }
+
+  function rebuildTrail() {
+    trail = [];
+    if (!snake || !snake.length) { visualLen = 0; return; }
+    const gap = trailStep();
+    for (let i = 0; i < snake.length - 1; i++) {
+      const a = cellCenter(snake[i].x, snake[i].y);
+      const b = cellCenter(snake[i + 1].x, snake[i + 1].y);
+      const n = Math.max(1, Math.round(dist(a, b) / gap));
+      for (let k = 0; k < n; k++) trail.push({ x: lerp(a.x, b.x, k / n), y: lerp(a.y, b.y, k / n) });
+    }
+    const tail = snake[snake.length - 1];
+    trail.push(cellCenter(tail.x, tail.y));
+    visualLen = bodyLength();
+  }
+
+  function updateTrail(t, dt) {
+    if (!snake || !snake.length) return;
+
+    const h = snake[0];
+    const hx = (lerp(h.px, h.x, t) + 0.5) * CELL;
+    const hy = (lerp(h.py, h.y, t) + 0.5) * CELL;
+    const gap = trailStep();
+
+    if (trail.length < 2) {
+      trail.unshift({ x: hx, y: hy });
+    } else if (dist(trail[1], { x: hx, y: hy }) >= gap) {
+      trail.unshift({ x: hx, y: hy });
+    } else {
+      trail[0].x = hx;
+      trail[0].y = hy;
+    }
+
+    // Ease toward the new length over roughly one step so the tail slows to
+    // a stop as the snake grows, rather than jumping backwards on the bite.
+    const target = bodyLength();
+    const tau = Math.max(60, speed * 0.6);
+    visualLen += (target - visualLen) * (1 - Math.exp(-dt / tau));
+
+    // Keep a little history past the visible tail, then drop the rest.
+    const keep = target + CELL * 3;
+    let acc = 0;
+    for (let i = 1; i < trail.length; i++) {
+      acc += dist(trail[i - 1], trail[i]);
+      if (acc > keep) { trail.length = i + 1; break; }
+    }
+  }
+
+  // Walk the trail and return the path covering exactly `len` pixels.
+  function sampleTrail(len) {
+    if (trail.length < 2) return trail.slice();
+    const out = [trail[0]];
+    let acc = 0;
+    for (let i = 1; i < trail.length; i++) {
+      const d = dist(trail[i - 1], trail[i]);
+      if (acc + d >= len) {
+        const f = d > 0 ? (len - acc) / d : 0;
+        out.push({ x: lerp(trail[i - 1].x, trail[i].x, f), y: lerp(trail[i - 1].y, trail[i].y, f) });
+        return out;
+      }
+      acc += d;
+      out.push(trail[i]);
+    }
+    return out;
+  }
+
+  function resample(pts, spacing) {
+    if (pts.length < 2) return pts.slice();
+    const out = [pts[0]];
+    let ax = pts[0].x, ay = pts[0].y, acc = 0;
+    for (let i = 1; i < pts.length; i++) {
+      let d = Math.hypot(pts[i].x - ax, pts[i].y - ay);
+      while (acc + d >= spacing) {
+        const f = (spacing - acc) / d;
+        ax = lerp(ax, pts[i].x, f);
+        ay = lerp(ay, pts[i].y, f);
+        out.push({ x: ax, y: ay });
+        acc = 0;
+        d = Math.hypot(pts[i].x - ax, pts[i].y - ay);
+      }
+      acc += d;
+      ax = pts[i].x; ay = pts[i].y;
+    }
+    const end = pts[pts.length - 1];
+    if (dist(out[out.length - 1], end) > spacing * 0.35) out.push(end);
+    return out;
+  }
+
+  // Rounds the 90° grid corners into arcs. The head stays pinned so the
+  // drawing never drifts away from the cell the rules are using.
+  function smoothPts(pts, passes) {
+    let cur = pts;
+    for (let p = 0; p < passes && cur.length > 2; p++) {
+      const next = [cur[0]];
+      for (let i = 1; i < cur.length - 1; i++) {
+        next.push({
+          x: cur[i - 1].x * 0.25 + cur[i].x * 0.5 + cur[i + 1].x * 0.25,
+          y: cur[i - 1].y * 0.25 + cur[i].y * 0.5 + cur[i + 1].y * 0.25,
+        });
+      }
+      next.push(cur[cur.length - 1]);
+      cur = next;
+    }
+    return cur;
+  }
+
+  // 0 at the head, 1 at the tail tip: a slight swell behind the head, then a
+  // long taper to a point.
+  function widthProfile(u) {
+    const neck = Math.min(1, u / 0.14);
+    return (0.84 + 0.16 * neck) * Math.pow(1 - u, 0.5);
+  }
+
+  function ribbonPath(pts, bodyW) {
+    const n = pts.length;
+    const L = [], R = [];
+    for (let i = 0; i < n; i++) {
+      const prev = pts[Math.max(0, i - 1)];
+      const next = pts[Math.min(n - 1, i + 1)];
+      let tx = next.x - prev.x, ty = next.y - prev.y;
+      const m = Math.hypot(tx, ty) || 1;
+      tx /= m; ty /= m;
+      const hw = bodyW * widthProfile(n > 1 ? i / (n - 1) : 0) * 0.5;
+      L.push({ x: pts[i].x - ty * hw, y: pts[i].y + tx * hw });
+      R.push({ x: pts[i].x + ty * hw, y: pts[i].y - tx * hw });
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(L[0].x, L[0].y);
+    for (let i = 1; i < n - 1; i++) {
+      ctx.quadraticCurveTo(L[i].x, L[i].y, (L[i].x + L[i + 1].x) / 2, (L[i].y + L[i + 1].y) / 2);
+    }
+    ctx.lineTo(L[n - 1].x, L[n - 1].y);
+    ctx.lineTo(R[n - 1].x, R[n - 1].y);
+    for (let i = n - 2; i >= 1; i--) {
+      ctx.quadraticCurveTo(R[i].x, R[i].y, (R[i].x + R[i - 1].x) / 2, (R[i].y + R[i - 1].y) / 2);
+    }
+    ctx.lineTo(R[0].x, R[0].y);
+    ctx.closePath();
+  }
+
+  function drawSnake() {
+    if (!snake || snake.length < 2 || trail.length < 2) return;
+
+    const raw = sampleTrail(visualLen);
+    if (raw.length < 2) return;
+    const pts = smoothPts(resample(raw, Math.max(4, CELL * 0.42)), 2);
+    if (pts.length < 2) return;
 
     const dying = state === STATE.DEAD;
-    const alpha = dying ? Math.max(0.25, deathAnim) : 1;
-
-    // interpolated points along the body
-    const pts = snake.map(s => {
-      const ix = lerp(s.px, s.x, t);
-      const iy = lerp(s.py, s.y, t);
-      return { x: (ix + 0.5) * CELL, y: (iy + 0.5) * CELL };
-    });
-
-    const bodyW = Math.max(6, CELL * 0.72);
+    const bodyW = Math.max(6, CELL * 0.78);
+    const tail = pts[pts.length - 1];
 
     ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.lineCap = 'round';
+    ctx.globalAlpha = dying ? Math.max(0.25, deathAnim) : 1;
     ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
 
-    const grad = ctx.createLinearGradient(pts[0].x, pts[0].y, pts[pts.length - 1].x, pts[pts.length - 1].y);
+    const grad = ctx.createLinearGradient(pts[0].x, pts[0].y, tail.x, tail.y);
     if (dying) {
       grad.addColorStop(0, '#ff8296');
       grad.addColorStop(1, '#7a2333');
     } else {
-      grad.addColorStop(0, '#8affc1');
-      grad.addColorStop(0.4, '#35e08c');
-      grad.addColorStop(1, '#128f66');
+      grad.addColorStop(0, '#9dffcf');
+      grad.addColorStop(0.35, '#35e08c');
+      grad.addColorStop(1, '#0f8f66');
     }
 
-    // glow underlay
-    ctx.strokeStyle = dying ? 'rgba(255, 93, 115, 0.25)' : 'rgba(53, 224, 140, 0.22)';
-    ctx.lineWidth = bodyW + CELL * 0.4;
-    ctx.filter = 'blur(' + Math.max(2, CELL * 0.18) + 'px)';
-    pathThrough(pts);
-    ctx.stroke();
-    ctx.filter = 'none';
+    ribbonPath(pts, bodyW);
 
-    // body — tapered: draw segment by segment with shrinking width
-    for (let i = 0; i < pts.length - 1; i++) {
-      const w = bodyW * (1 - (i / pts.length) * 0.45);
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = w;
-      ctx.beginPath();
-      ctx.moveTo(pts[i].x, pts[i].y);
-      const mid = i < pts.length - 2
-        ? { x: (pts[i + 1].x + pts[i + 2].x) / 2, y: (pts[i + 1].y + pts[i + 2].y) / 2 }
-        : pts[i + 1];
-      ctx.quadraticCurveTo(pts[i + 1].x, pts[i + 1].y, mid.x, mid.y);
-      ctx.stroke();
+    // glow, then the body itself over the top
+    ctx.shadowColor = dying ? 'rgba(255, 93, 115, 0.55)' : 'rgba(53, 224, 140, 0.5)';
+    ctx.shadowBlur = Math.max(6, CELL * 0.7);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fill();
+
+    // belly highlight running along the spine
+    ctx.strokeStyle = 'rgba(255,255,255,0.13)';
+    ctx.lineWidth = bodyW * 0.3;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length - 1; i++) {
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, (pts[i].x + pts[i + 1].x) / 2, (pts[i].y + pts[i + 1].y) / 2);
     }
-
-    // belly highlight
-    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
-    ctx.lineWidth = bodyW * 0.32;
-    pathThrough(pts);
     ctx.stroke();
 
-    // scale dots
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    for (let i = 2; i < pts.length; i += 2) {
+    // scales, with a shimmer travelling down the body
+    for (let i = 2; i < pts.length - 2; i += 2) {
+      const u = i / (pts.length - 1);
+      const shimmer = 0.07 + 0.13 * Math.max(0, Math.sin(time * 0.004 - u * 6));
+      ctx.fillStyle = 'rgba(255,255,255,' + shimmer.toFixed(3) + ')';
       ctx.beginPath();
-      ctx.arc(pts[i].x, pts[i].y, Math.max(1, bodyW * 0.09), 0, Math.PI * 2);
+      ctx.arc(pts[i].x, pts[i].y, Math.max(1, bodyW * 0.085 * (1 - u * 0.6)), 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -754,21 +899,16 @@
     ctx.restore();
   }
 
-  function pathThrough(pts) {
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length - 1; i++) {
-      const mx = (pts[i].x + pts[i + 1].x) / 2;
-      const my = (pts[i].y + pts[i + 1].y) / 2;
-      ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
-    }
-    ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
-  }
-
   function drawHead(pts, bodyW, dying) {
-    const head = pts[0], neck = pts[1];
+    const head = pts[0];
+    // Look far enough back for a stable heading; the smoothed path makes the
+    // head swing through corners instead of snapping to the new axis.
+    let neck = pts[pts.length - 1];
+    for (let i = 1; i < pts.length; i++) {
+      if (dist(pts[i], head) >= CELL * 0.34) { neck = pts[i]; break; }
+    }
     const ang = Math.atan2(head.y - neck.y, head.x - neck.x);
-    const r = bodyW * 0.62;
+    const r = bodyW * 0.56;
 
     ctx.save();
     ctx.translate(head.x, head.y);
@@ -892,17 +1032,20 @@
     if (state === STATE.DEAD && deathAnim > 0) deathAnim = Math.max(0, deathAnim - dt * 0.0012);
     if (eatPulse > 0) eatPulse = Math.max(0, eatPulse - dt * 0.004);
 
-    const t = state === STATE.PLAYING ? Math.min(1, stepAccum / speed) : 1;
+    if (state === STATE.PLAYING) updateTrail(Math.min(1, stepAccum / speed), dt);
 
     drawBoard();
     drawFood();
     drawGoldFood();
-    if (snake) drawSnake(t);
+    drawSnake();
     drawParticles(dt);
     drawFloaters(dt);
   }
 
   requestAnimationFrame(frame);
+
+  // The trail is stored in pixels, so a new cell size invalidates it.
+  window.addEventListener('resize', () => { if (snake) rebuildTrail(); });
 
   /* ============================== Controls ============================== */
 
