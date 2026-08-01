@@ -388,7 +388,7 @@
 
   let state = STATE.MENU;
   let snake, dir, dirQueue, food, goldFood, goldTimer;
-  let score, best, bestAtStart, level, speed;
+  let score, best, bestAtStart, level;
   let stepAccum, lastTime, deathAnim;
   let particles = [], floaters = [], eatPulse = 0, appleAngle = 0;
   let time = 0, deathTimeout = null;
@@ -397,8 +397,7 @@
   best = +(localStorage.getItem('neon-serpent-best') || 0);
   document.getElementById('best-value').textContent = best;
 
-  const BASE_STEP = 160;      // ms per cell at level 1
-  const MIN_STEP = 62;
+  const STEP_MS = 160;        // ms per cell — the same from the first bite to the last
   const POINTS_PER_LEVEL = 50;
 
   function reset() {
@@ -409,7 +408,6 @@
     dirQueue = [];
     score = 0; level = 1;
     bestAtStart = best;
-    speed = BASE_STEP;
     stepAccum = 0;
     goldFood = null; goldTimer = 0;
     particles = []; floaters = [];
@@ -520,10 +518,10 @@
     else snake[snake.length - 1] = { ...tail, px: tail.x, py: tail.y };
 
     if (grew) {
+      // Levels mark progress only — the pace never changes.
       const newLevel = 1 + Math.floor(score / POINTS_PER_LEVEL);
       if (newLevel > level) {
         level = newLevel;
-        speed = Math.max(MIN_STEP, BASE_STEP - (level - 1) * 12);
         sfx.level();
         floater(canvas.clientWidth / 2, canvas.clientHeight / 2, 'שלב ' + level, '#6ec6ff');
       }
@@ -733,7 +731,7 @@
     // Ease toward the new length over roughly one step so the tail slows to
     // a stop as the snake grows, rather than jumping backwards on the bite.
     const target = bodyLength();
-    const tau = Math.max(60, speed * 0.6);
+    const tau = Math.max(60, STEP_MS * 0.6);
     visualLen += (target - visualLen) * (1 - Math.exp(-dt / tau));
 
     // Keep a little history past the visible tail, then drop the rest.
@@ -1018,8 +1016,8 @@
 
     if (state === STATE.PLAYING) {
       stepAccum += dt;
-      while (stepAccum >= speed) {
-        stepAccum -= speed;
+      while (stepAccum >= STEP_MS) {
+        stepAccum -= STEP_MS;
         step();
         if (state !== STATE.PLAYING) { stepAccum = 0; break; }
       }
@@ -1032,7 +1030,7 @@
     if (state === STATE.DEAD && deathAnim > 0) deathAnim = Math.max(0, deathAnim - dt * 0.0012);
     if (eatPulse > 0) eatPulse = Math.max(0, eatPulse - dt * 0.004);
 
-    if (state === STATE.PLAYING) updateTrail(Math.min(1, stepAccum / speed), dt);
+    if (state === STATE.PLAYING) updateTrail(Math.min(1, stepAccum / STEP_MS), dt);
 
     drawBoard();
     drawFood();
