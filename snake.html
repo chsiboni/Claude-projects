@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SNAKE · נחש</title>
+<style>
+  /* ── Lacquered-board palette ─────────────────────────────
+     ground   #0B1512  deep ink-teal lacquer
+     board    #13221C  raised board surface
+     jade     #4BEFB0 → #0E8F6B  the snake
+     gold     #F3C14B  the fruit + hairline frame
+     ivory    #EFEADB  text
+     coral    #E8685A  danger / game over
+     This design commits to a single dark world by choice. */
+  :root {
+    --ground: #0B1512;
+    --board: #13221C;
+    --jade: #4BEFB0;
+    --jade-deep: #0E8F6B;
+    --gold: #F3C14B;
+    --ivory: #EFEADB;
+    --ivory-dim: rgba(239, 234, 219, 0.55);
+    --coral: #E8685A;
+    --hairline: rgba(243, 193, 75, 0.28);
+    --font-display: "Didot", "Bodoni MT", "Bodoni 72", "Playfair Display", Georgia, serif;
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "Heebo", "Assistant", Arial, sans-serif;
+    --font-num: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    background:
+      radial-gradient(120% 90% at 50% 0%, #10201A 0%, var(--ground) 55%, #070E0B 100%);
+    color: var(--ivory);
+    font-family: var(--font-ui);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  /* ── HUD ─────────────────────────────────────────────── */
+  .hud {
+    width: min(92vw, 560px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 6px 14px;
+  }
+
+  .hud .stat { text-align: right; min-width: 72px; }
+  .hud .stat.best { text-align: left; }
+
+  .stat .label {
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    color: var(--ivory-dim);
+    margin-bottom: 4px;
+  }
+
+  .stat .value {
+    font-family: var(--font-num);
+    font-variant-numeric: tabular-nums;
+    font-size: 26px;
+    line-height: 1;
+    color: var(--ivory);
+    transition: transform 0.15s ease;
+  }
+  .stat .value.bump { transform: scale(1.25); color: var(--gold); }
+
+  .wordmark {
+    text-align: center;
+    direction: ltr;
+  }
+  .wordmark .title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 30px;
+    letter-spacing: 0.42em;
+    margin-right: -0.42em; /* optically recenter the tracked caps */
+    color: var(--ivory);
+  }
+  .wordmark .title .accent { color: var(--jade); }
+  .wordmark .sub {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--ivory-dim);
+    margin-top: 5px;
+  }
+
+  /* ── Stage ───────────────────────────────────────────── */
+  .stage {
+    position: relative;
+    width: min(92vw, 560px);
+    aspect-ratio: 1;
+    border-radius: 14px;
+    box-shadow:
+      0 0 0 1px var(--hairline),
+      0 30px 80px -20px rgba(0, 0, 0, 0.8),
+      0 4px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 14px;
+  }
+
+  /* ── Overlay panels ──────────────────────────────────── */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+    background: rgba(7, 14, 11, 0.62);
+    backdrop-filter: blur(14px) saturate(1.1);
+    -webkit-backdrop-filter: blur(14px) saturate(1.1);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+    padding: 24px;
+  }
+  .overlay.visible { opacity: 1; pointer-events: auto; }
+
+  .overlay .kicker {
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    color: var(--gold);
+  }
+  .overlay .kicker.danger { color: var(--coral); }
+
+  .overlay h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(30px, 7vw, 44px);
+    letter-spacing: 0.05em;
+    text-wrap: balance;
+    color: var(--ivory);
+  }
+
+  .overlay .detail {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--ivory-dim);
+    max-width: 34ch;
+    text-wrap: balance;
+  }
+
+  .overlay .final-score {
+    font-family: var(--font-num);
+    font-variant-numeric: tabular-nums;
+    font-size: 52px;
+    line-height: 1;
+    color: var(--gold);
+  }
+  .overlay .record-note {
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    color: var(--jade);
+  }
+
+  .btn {
+    font-family: var(--font-ui);
+    font-size: 14px;
+    letter-spacing: 0.14em;
+    color: var(--ground);
+    background: linear-gradient(180deg, #F7D278 0%, var(--gold) 55%, #D9A32E 100%);
+    border: none;
+    border-radius: 999px;
+    padding: 13px 40px;
+    cursor: pointer;
+    margin-top: 8px;
+    box-shadow: 0 6px 24px rgba(243, 193, 75, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(243, 193, 75, 0.45), inset 0 1px 0 rgba(255,255,255,0.5); }
+  .btn:active { transform: translateY(0); }
+  .btn:focus-visible { outline: 2px solid var(--ivory); outline-offset: 3px; }
+
+  /* ── Footer hints ────────────────────────────────────── */
+  .hints {
+    width: min(92vw, 560px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 6px 0;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--ivory-dim);
+  }
+  .hints kbd {
+    font-family: var(--font-num);
+    font-size: 10px;
+    border: 1px solid rgba(239, 234, 219, 0.25);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin: 0 2px;
+  }
+
+  .sound-toggle {
+    background: none;
+    border: 1px solid rgba(239, 234, 219, 0.22);
+    border-radius: 999px;
+    color: var(--ivory-dim);
+    font-family: var(--font-ui);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .sound-toggle:hover { color: var(--ivory); border-color: rgba(239, 234, 219, 0.5); }
+  .sound-toggle:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  .touch-hint { display: none; }
+  @media (pointer: coarse) {
+    .key-hint { display: none; }
+    .touch-hint { display: inline; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .overlay, .btn, .stat .value { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hud">
+  <div class="stat">
+    <div class="label">ניקוד</div>
+    <div class="value" id="score">0</div>
+  </div>
+  <div class="wordmark">
+    <div class="title">SN<span class="accent">Λ</span>KE</div>
+    <div class="sub">משחק הנחש</div>
+  </div>
+  <div class="stat best">
+    <div class="label">שיא</div>
+    <div class="value" id="best">0</div>
+  </div>
+</div>
+
+<div class="stage">
+  <canvas id="board"></canvas>
+
+  <div class="overlay visible" id="startOverlay">
+    <div class="kicker">מהדורת סטודיו</div>
+    <h2>נחש הג׳ייד</h2>
+    <p class="detail">
+      אספו את פירות הזהב, גדלו והיזהרו — הקירות והזנב קטלניים.
+      הקצב עולה ככל שהנחש מתארך.
+    </p>
+    <button class="btn" id="startBtn">התחל משחק</button>
+  </div>
+
+  <div class="overlay" id="pauseOverlay">
+    <div class="kicker">הפסקה</div>
+    <h2>המשחק מושהה</h2>
+    <p class="detail">לחצו רווח או געו במסך כדי להמשיך.</p>
+  </div>
+
+  <div class="overlay" id="gameOverOverlay">
+    <div class="kicker danger">סוף המשחק</div>
+    <div class="final-score" id="finalScore">0</div>
+    <div class="record-note" id="recordNote" hidden>✦ שיא חדש ✦</div>
+    <h2 id="gameOverTitle">הנחש נפל</h2>
+    <button class="btn" id="retryBtn">שחקו שוב</button>
+  </div>
+</div>
+
+<div class="hints">
+  <span>
+    <span class="key-hint"><kbd>←↑↓→</kbd> או <kbd>WASD</kbd> לתנועה · <kbd>רווח</kbd> השהיה</span>
+    <span class="touch-hint">החליקו על הלוח כדי לשנות כיוון</span>
+  </span>
+  <button class="sound-toggle" id="soundBtn" aria-pressed="true">צליל ✦ פועל</button>
+</div>
+
+<script>
+"use strict";
+
+/* ══════════════════ Setup ══════════════════ */
+
+const GRID = 21;                 // cells per side
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+
+let CELL = 30, PAD = 14, SIZE = GRID * CELL + PAD * 2, DPR = 1;
+
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  SIZE = Math.round(rect.width);
+  PAD = Math.round(SIZE * 0.03);
+  CELL = (SIZE - PAD * 2) / GRID;
+  canvas.width = SIZE * DPR;
+  canvas.height = SIZE * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+resize();
+window.addEventListener("resize", resize);
+
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ══════════════════ Audio (soft synth) ══════════════════ */
+
+let audioCtx = null;
+let soundOn = true;
+
+function ensureAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { audioCtx = null; }
+  }
+  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+}
+
+function tone(freq, dur, type, gainVal, when = 0) {
+  if (!soundOn || !audioCtx) return;
+  const t = audioCtx.currentTime + when;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(gainVal, t + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(t);
+  osc.stop(t + dur + 0.05);
+}
+
+// Pentatonic ladder that climbs as the snake grows.
+const SCALE = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
+function sfxEat(step) {
+  const f = SCALE[step % SCALE.length];
+  tone(f, 0.22, "sine", 0.18);
+  tone(f * 2, 0.14, "sine", 0.05);
+}
+function sfxDie() {
+  tone(196, 0.5, "triangle", 0.22);
+  tone(98, 0.7, "sine", 0.25, 0.06);
+}
+function sfxStart() {
+  tone(523.25, 0.12, "sine", 0.12);
+  tone(659.25, 0.12, "sine", 0.12, 0.09);
+  tone(783.99, 0.2, "sine", 0.14, 0.18);
+}
+
+/* ══════════════════ Game state ══════════════════ */
+
+const S = {
+  snake: [],        // head first, {x, y}
+  prevSnake: [],    // for interpolation
+  dir: { x: 1, y: 0 },
+  queued: [],       // buffered direction changes
+  food: { x: 0, y: 0 },
+  foodBorn: 0,
+  score: 0,
+  best: Number(localStorage.getItem("jade-snake-best") || 0),
+  eaten: 0,
+  tickMs: 150,
+  acc: 0,
+  running: false,
+  paused: false,
+  dead: false,
+  deathAt: 0,
+  shake: 0,
+  particles: [],
+  eatFlash: 0,
+};
+
+const scoreEl = document.getElementById("score");
+const bestEl = document.getElementById("best");
+bestEl.textContent = S.best;
+
+function placeFood() {
+  const free = [];
+  const taken = new Set(S.snake.map(p => p.x + "," + p.y));
+  for (let x = 0; x < GRID; x++)
+    for (let y = 0; y < GRID; y++)
+      if (!taken.has(x + "," + y)) free.push({ x, y });
+  S.food = free[Math.floor(Math.random() * free.length)] || { x: 0, y: 0 };
+  S.foodBorn = performance.now();
+}
+
+function reset() {
+  const cy = Math.floor(GRID / 2);
+  S.snake = [{ x: 8, y: cy }, { x: 7, y: cy }, { x: 6, y: cy }, { x: 5, y: cy }];
+  S.prevSnake = S.snake.map(p => ({ ...p }));
+  S.dir = { x: 1, y: 0 };
+  S.queued = [];
+  S.score = 0;
+  S.eaten = 0;
+  S.tickMs = 150;
+  S.acc = 0;
+  S.dead = false;
+  S.paused = false;
+  S.shake = 0;
+  S.particles = [];
+  scoreEl.textContent = "0";
+  placeFood();
+}
+
+/* ══════════════════ Logic tick ══════════════════ */
+
+function tick() {
+  if (S.queued.length) {
+    const d = S.queued.shift();
+    if (d.x !== -S.dir.x || d.y !== -S.dir.y) S.dir = d;
+  }
+
+  S.prevSnake = S.snake.map(p => ({ ...p }));
+  const head = { x: S.snake[0].x + S.dir.x, y: S.snake[0].y + S.dir.y };
+
+  // walls
+  if (head.x < 0 || head.y < 0 || head.x >= GRID || head.y >= GRID) return die();
+  // self (tail cell vacates this tick, so exclude it)
+  for (let i = 0; i < S.snake.length - 1; i++)
+    if (S.snake[i].x === head.x && S.snake[i].y === head.y) return die();
+
+  S.snake.unshift(head);
+
+  if (head.x === S.food.x && head.y === S.food.y) {
+    S.eaten++;
+    S.score += 10;
+    S.tickMs = Math.max(72, 150 - S.eaten * 3);
+    scoreEl.textContent = S.score;
+    scoreEl.classList.add("bump");
+    setTimeout(() => scoreEl.classList.remove("bump"), 160);
+    spawnBurst(S.food.x, S.food.y);
+    S.eatFlash = 1;
+    sfxEat(S.eaten - 1);
+    placeFood();
+    // keep tail → snake grows
+  } else {
+    S.snake.pop();
+  }
+}
+
+function die() {
+  S.dead = true;
+  S.running = false;
+  S.deathAt = performance.now();
+  S.shake = reducedMotion ? 0 : 1;
+  sfxDie();
+
+  const isRecord = S.score > S.best;
+  if (isRecord) {
+    S.best = S.score;
+    localStorage.setItem("jade-snake-best", S.best);
+    bestEl.textContent = S.best;
+  }
+
+  document.getElementById("finalScore").textContent = S.score;
+  document.getElementById("recordNote").hidden = !isRecord;
+  document.getElementById("gameOverTitle").textContent =
+    isRecord ? "מרשים ביותר" : S.score >= 100 ? "כמעט שם" : "הנחש נפל";
+
+  setTimeout(() => show(gameOverOverlay), 650);
+}
+
+/* ══════════════════ Particles ══════════════════ */
+
+function spawnBurst(gx, gy) {
+  if (reducedMotion) return;
+  const cx = PAD + (gx + 0.5) * CELL;
+  const cy = PAD + (gy + 0.5) * CELL;
+  for (let i = 0; i < 16; i++) {
+    const a = (Math.PI * 2 * i) / 16 + Math.random() * 0.4;
+    const sp = CELL * (0.05 + Math.random() * 0.09);
+    S.particles.push({
+      x: cx, y: cy,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+      life: 1,
+      gold: Math.random() > 0.35,
+    });
+  }
+}
+
+/* ══════════════════ Rendering ══════════════════ */
+
+function cellCenter(p, q, t) {
+  // lerp between previous position q and current p
+  const x = q ? q.x + (p.x - q.x) * t : p.x;
+  const y = q ? q.y + (p.y - q.y) * t : p.y;
+  return { x: PAD + (x + 0.5) * CELL, y: PAD + (y + 0.5) * CELL };
+}
+
+function drawBoard(now) {
+  // lacquer ground
+  ctx.fillStyle = "#0E1B16";
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  // board surface
+  const g = ctx.createLinearGradient(0, 0, 0, SIZE);
+  g.addColorStop(0, "#152620");
+  g.addColorStop(1, "#101E19");
+  ctx.fillStyle = g;
+  roundRect(PAD * 0.45, PAD * 0.45, SIZE - PAD * 0.9, SIZE - PAD * 0.9, 10);
+  ctx.fill();
+
+  // whisper-faint checker
+  ctx.fillStyle = "rgba(255,255,255,0.016)";
+  for (let x = 0; x < GRID; x++)
+    for (let y = 0; y < GRID; y++)
+      if ((x + y) % 2 === 0)
+        ctx.fillRect(PAD + x * CELL, PAD + y * CELL, CELL, CELL);
+
+  // gold hairline frame
+  ctx.strokeStyle = "rgba(243,193,75,0.18)";
+  ctx.lineWidth = 1;
+  roundRect(PAD * 0.45 + 0.5, PAD * 0.45 + 0.5, SIZE - PAD * 0.9 - 1, SIZE - PAD * 0.9 - 1, 10);
+  ctx.stroke();
+}
+
+function drawVignette() {
+  const v = ctx.createRadialGradient(SIZE / 2, SIZE / 2, SIZE * 0.35, SIZE / 2, SIZE / 2, SIZE * 0.75);
+  v.addColorStop(0, "rgba(0,0,0,0)");
+  v.addColorStop(1, "rgba(0,0,0,0.42)");
+  ctx.fillStyle = v;
+  ctx.fillRect(0, 0, SIZE, SIZE);
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function lerpColor(c1, c2, t) {
+  return [
+    Math.round(c1[0] + (c2[0] - c1[0]) * t),
+    Math.round(c1[1] + (c2[1] - c1[1]) * t),
+    Math.round(c1[2] + (c2[2] - c1[2]) * t),
+  ];
+}
+
+const JADE_HEAD = [75, 239, 176];
+const JADE_TAIL = [14, 110, 84];
+const DEAD_HEAD = [110, 118, 114];
+const DEAD_TAIL = [60, 66, 63];
+
+function drawSnake(t, now) {
+  const pts = S.snake.map((p, i) => cellCenter(p, S.prevSnake[i] || p, t));
+  if (pts.length < 2) return;
+
+  const dying = S.dead;
+  const fade = dying ? Math.min(1, (now - S.deathAt) / 500) : 0;
+
+  // glow underlay
+  if (!dying) {
+    ctx.save();
+    ctx.shadowColor = "rgba(75,239,176,0.55)";
+    ctx.shadowBlur = CELL * 0.7;
+    ctx.strokeStyle = "rgba(75,239,176,0.10)";
+    ctx.lineWidth = CELL * 0.86;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    pathThrough(pts);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // body: per-segment strokes, jade gradient head→tail, gentle taper
+  const n = pts.length;
+  for (let i = n - 1; i > 0; i--) {
+    const u = i / (n - 1);
+    const live = lerpColor(JADE_HEAD, JADE_TAIL, u);
+    const gone = lerpColor(DEAD_HEAD, DEAD_TAIL, u);
+    const c = lerpColor(live, gone, fade);
+    ctx.strokeStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
+    ctx.lineWidth = CELL * (0.78 - 0.3 * u);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    const a = pts[i], b = pts[i - 1];
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+
+  // glossy spine highlight
+  ctx.save();
+  ctx.globalAlpha = 0.22 * (1 - fade);
+  ctx.strokeStyle = "#FFFFFF";
+  ctx.lineWidth = CELL * 0.16;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  pathThrough(pts);
+  ctx.stroke();
+  ctx.restore();
+
+  drawHead(pts, fade, now);
+}
+
+function pathThrough(pts) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length - 1; i++) {
+    const mx = (pts[i].x + pts[i + 1].x) / 2;
+    const my = (pts[i].y + pts[i + 1].y) / 2;
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+  }
+  const last = pts[pts.length - 1];
+  ctx.lineTo(last.x, last.y);
+}
+
+function drawHead(pts, fade, now) {
+  const h = pts[0];
+  const dx = S.dir.x, dy = S.dir.y;
+  const r = CELL * 0.5;
+
+  // head dome
+  const c = lerpColor(JADE_HEAD, DEAD_HEAD, fade);
+  const dome = ctx.createRadialGradient(h.x - dx * r * 0.3, h.y - dy * r * 0.3, r * 0.15, h.x, h.y, r);
+  dome.addColorStop(0, `rgb(${Math.min(255, c[0] + 60)},${Math.min(255, c[1] + 30)},${Math.min(255, c[2] + 40)})`);
+  dome.addColorStop(1, `rgb(${c[0]},${c[1]},${c[2]})`);
+  ctx.fillStyle = dome;
+  ctx.beginPath();
+  ctx.arc(h.x, h.y, r * 0.92, 0, Math.PI * 2);
+  ctx.fill();
+
+  // tongue flick every ~1.6s
+  const flick = (now % 1600) / 1600;
+  if (!S.dead && flick > 0.86) {
+    const len = r * (0.9 + Math.sin(flick * Math.PI * 40) * 0.15);
+    ctx.strokeStyle = "#E8685A";
+    ctx.lineWidth = Math.max(1.5, CELL * 0.07);
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(h.x + dx * r * 0.8, h.y + dy * r * 0.8);
+    ctx.lineTo(h.x + dx * (r * 0.8 + len), h.y + dy * (r * 0.8 + len));
+    ctx.stroke();
+  }
+
+  // eyes perpendicular to travel
+  const px = -dy, py = dx;
+  const eo = r * 0.42, ef = r * 0.3;
+  const er = r * 0.2;
+  for (const s of [-1, 1]) {
+    const ex = h.x + px * eo * s + dx * ef;
+    const ey = h.y + py * eo * s + dy * ef;
+    ctx.fillStyle = "#F6F3E8";
+    ctx.beginPath();
+    ctx.arc(ex, ey, er, 0, Math.PI * 2);
+    ctx.fill();
+    if (S.dead) {
+      // × eyes
+      ctx.strokeStyle = "#3A423E";
+      ctx.lineWidth = Math.max(1.2, er * 0.35);
+      ctx.beginPath();
+      ctx.moveTo(ex - er * 0.5, ey - er * 0.5); ctx.lineTo(ex + er * 0.5, ey + er * 0.5);
+      ctx.moveTo(ex + er * 0.5, ey - er * 0.5); ctx.lineTo(ex - er * 0.5, ey + er * 0.5);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = "#12211C";
+      ctx.beginPath();
+      ctx.arc(ex + dx * er * 0.35, ey + dy * er * 0.35, er * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+function drawFood(now) {
+  const age = (now - S.foodBorn) / 1000;
+  const pop = Math.min(1, age * 5);                        // spawn pop-in
+  const pulse = reducedMotion ? 1 : 1 + Math.sin(now / 300) * 0.08;
+  const bob = reducedMotion ? 0 : Math.sin(now / 500) * CELL * 0.05;
+  const cx = PAD + (S.food.x + 0.5) * CELL;
+  const cy = PAD + (S.food.y + 0.5) * CELL + bob;
+  const r = CELL * 0.32 * pulse * (0.4 + 0.6 * pop);
+
+  ctx.save();
+  ctx.shadowColor = "rgba(243,193,75,0.8)";
+  ctx.shadowBlur = CELL * 0.6;
+
+  const orb = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.1, cx, cy, r);
+  orb.addColorStop(0, "#FFF3CF");
+  orb.addColorStop(0.45, "#F3C14B");
+  orb.addColorStop(1, "#C8862A");
+  ctx.fillStyle = orb;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // tiny leaf
+  ctx.fillStyle = "#4BEFB0";
+  ctx.beginPath();
+  ctx.ellipse(cx + r * 0.25, cy - r * 1.05, r * 0.32, r * 0.15, -0.7, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawParticles() {
+  for (let i = S.particles.length - 1; i >= 0; i--) {
+    const p = S.particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vx *= 0.92; p.vy *= 0.92;
+    p.life -= 0.035;
+    if (p.life <= 0) { S.particles.splice(i, 1); continue; }
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.gold ? "#F3C14B" : "#4BEFB0";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, CELL * 0.08 * p.life + 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ══════════════════ Main loop ══════════════════ */
+
+let lastFrame = performance.now();
+
+function frame(now) {
+  const dt = Math.min(50, now - lastFrame);
+  lastFrame = now;
+
+  if (S.running && !S.paused && !S.dead) {
+    S.acc += dt;
+    while (S.acc >= S.tickMs) {
+      S.acc -= S.tickMs;
+      tick();
+      if (S.dead) break;
+    }
+  }
+
+  const t = S.dead ? 1 : Math.min(1, S.acc / S.tickMs);
+
+  ctx.save();
+  if (S.shake > 0.01) {
+    const m = S.shake * CELL * 0.25;
+    ctx.translate((Math.random() - 0.5) * m, (Math.random() - 0.5) * m);
+    S.shake *= 0.88;
+  }
+
+  drawBoard(now);
+  drawFood(now);
+  drawSnake(t, now);
+  drawParticles();
+
+  // eat flash — a soft jade wash
+  if (S.eatFlash > 0.01) {
+    ctx.fillStyle = `rgba(75,239,176,${S.eatFlash * 0.05})`;
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    S.eatFlash *= 0.85;
+  }
+
+  drawVignette();
+  ctx.restore();
+
+  requestAnimationFrame(frame);
+}
+
+/* ══════════════════ Overlays & flow ══════════════════ */
+
+const startOverlay = document.getElementById("startOverlay");
+const pauseOverlay = document.getElementById("pauseOverlay");
+const gameOverOverlay = document.getElementById("gameOverOverlay");
+
+function show(el) { el.classList.add("visible"); }
+function hide(el) { el.classList.remove("visible"); }
+
+function startGame() {
+  ensureAudio();
+  reset();
+  hide(startOverlay);
+  hide(gameOverOverlay);
+  hide(pauseOverlay);
+  S.running = true;
+  sfxStart();
+}
+
+function togglePause() {
+  if (!S.running || S.dead) return;
+  S.paused = !S.paused;
+  S.paused ? show(pauseOverlay) : hide(pauseOverlay);
+}
+
+document.getElementById("startBtn").addEventListener("click", startGame);
+document.getElementById("retryBtn").addEventListener("click", startGame);
+
+const soundBtn = document.getElementById("soundBtn");
+soundBtn.addEventListener("click", () => {
+  soundOn = !soundOn;
+  if (soundOn) ensureAudio();
+  soundBtn.textContent = soundOn ? "צליל ✦ פועל" : "צליל ✦ כבוי";
+  soundBtn.setAttribute("aria-pressed", String(soundOn));
+});
+
+/* ══════════════════ Input ══════════════════ */
+
+function queueDir(d) {
+  const last = S.queued.length ? S.queued[S.queued.length - 1] : S.dir;
+  if ((d.x === last.x && d.y === last.y) || (d.x === -last.x && d.y === -last.y)) return;
+  if (S.queued.length < 2) S.queued.push(d);
+}
+
+const KEYS = {
+  ArrowUp: { x: 0, y: -1 }, ArrowDown: { x: 0, y: 1 },
+  ArrowLeft: { x: -1, y: 0 }, ArrowRight: { x: 1, y: 0 },
+  w: { x: 0, y: -1 }, s: { x: 0, y: 1 }, a: { x: -1, y: 0 }, d: { x: 1, y: 0 },
+};
+
+window.addEventListener("keydown", (e) => {
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (k === " " || k === "Escape" || k === "p") {
+    e.preventDefault();
+    if (!S.running && !S.dead && startOverlay.classList.contains("visible")) { startGame(); return; }
+    if (S.dead && gameOverOverlay.classList.contains("visible")) { startGame(); return; }
+    togglePause();
+    return;
+  }
+  const d = KEYS[k];
+  if (!d) return;
+  e.preventDefault();
+  if (!S.running && !S.dead && startOverlay.classList.contains("visible")) startGame();
+  if (S.paused) togglePause();
+  queueDir(d);
+});
+
+// swipe controls
+let touchStart = null;
+canvas.addEventListener("touchstart", (e) => {
+  touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+}, { passive: true });
+
+canvas.addEventListener("touchmove", (e) => {
+  if (!touchStart) return;
+  const dx = e.touches[0].clientX - touchStart.x;
+  const dy = e.touches[0].clientY - touchStart.y;
+  if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
+  queueDir(Math.abs(dx) > Math.abs(dy)
+    ? { x: Math.sign(dx), y: 0 }
+    : { x: 0, y: Math.sign(dy) });
+  touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  e.preventDefault();
+}, { passive: false });
+
+pauseOverlay.addEventListener("click", togglePause);
+
+/* ══════════════════ Go ══════════════════ */
+
+reset();
+S.prevSnake = S.snake.map(p => ({ ...p }));
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
