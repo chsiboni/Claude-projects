@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<settings>
+    <setting propertyKey="@Properties.serverUrl" title="@Strings.SetServerUrl">
+        <settingConfig type="alphaNumeric" maxLength="160" />
+    </setting>
+    <setting propertyKey="@Properties.apiKey" title="@Strings.SetApiKey">
+        <settingConfig type="alphaNumeric" maxLength="80" />
+    </setting>
+    <setting propertyKey="@Properties.kcalPerClick" title="@Strings.SetKcalPerClick">
+        <settingConfig type="numeric" min="1" max="500" />
+    </setting>
+    <setting propertyKey="@Properties.dailyBudget" title="@Strings.SetDailyBudget">
+        <settingConfig type="numeric" min="0" max="10000" />
+    </setting>
+    <setting propertyKey="@Properties.includeActive" title="@Strings.SetIncludeActive">
+        <settingConfig type="boolean" />
+    </setting>
+    <setting propertyKey="@Properties.autoSync" title="@Strings.SetAutoSync">
+        <settingConfig type="boolean" />
+    </setting>
+</settings>

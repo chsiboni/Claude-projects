@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="968" height="504" viewBox="0 0 968 504">
+<rect width="968" height="504" fill="#111"/>
+<circle cx="227.0" cy="227.0" r="226.0" fill="#000"/>
+<circle cx="227.0" cy="227.0" r="215.0" fill="none" stroke="#333" stroke-width="20"/>
+<path d="M 227.0 12.0 A 215.0 215.0 0 0 1 441.68 238.64" fill="none" stroke="#3CD682" stroke-width="20" stroke-linecap="butt"/>
+<text x="227.0" y="95.34" fill="#808080" font-size="24" font-weight="400" letter-spacing="2" text-anchor="middle" dominant-baseline="middle" font-family="Helvetica Neue, Arial, sans-serif">12 SETS  x50</text>
+<text x="227.0" y="186.14" fill="#3CD682" font-size="150" font-weight="300" letter-spacing="1" text-anchor="middle" dominant-baseline="middle" font-family="Helvetica Neue, Arial, sans-serif">34</text>
+<text x="227.0" y="261.04999999999995" fill="#808080" font-size="24" font-weight="400" letter-spacing="3" text-anchor="middle" dominant-baseline="middle" font-family="Helvetica Neue, Arial, sans-serif">SETS LEFT</text>
+<line x1="136.2" y1="288.29" x2="317.79999999999995" y2="288.29" stroke="#333" stroke-width="1"/>
+<text x="227.0" y="320.07" fill="#FFF" font-size="34" font-weight="400" letter-spacing="1" text-anchor="middle" dominant-baseline="middle" font-family="Helvetica Neue, Arial, sans-serif">600 / 2320</text>
+<text x="227.0" y="356.39" fill="#808080" font-size="22" font-weight="400" letter-spacing="1" text-anchor="middle" dominant-baseline="middle" font-family="Helvetica Neue, Arial, sans-serif">BASE 2000  +320 ACTIVE</text>
+<text x="227.0" y="388.17" fill="#808080" font-size="22" font-weight="400" letter-spacing="2" text-anchor="middle" dominant-baseline="middle" font-family="Helvetica Neue, Arial, sans-serif">SYNCED</text>
+<text x="227.0" y="488" fill="#666" font-size="20" text-anchor="middle" font-family="Helvetica Neue, Arial, sans-serif">after a run — room opened up</text>
+<circle cx="741.0" cy="227.0" r="226.0" fill="#000"/>
+<circle cx="741.0" cy="227.0" r="215.0" fill="none" stroke="#333" stroke-width="20"/>
+<circle cx="741.0" cy="227.0" r="215.0" fill="none" stroke="#FF4433" stroke-width="20"/>
+<text x="741.0" y="95.34" fill="#808080" font-size="24" font-weight="400" letter-spacing="2" text-anchor="middle" dominant-baseline="middle" font-family="Helvetica Neue, Arial, sans-serif">43 SETS  x50</text>
+<text x="741.0" y="186.14" fill="#FF4433" font-size="150" font-weight="300" letter-spacing="1" text-anchor="middle" dominant-baseline="middle" font-family="Helvetica Neue, Arial, sans-serif">3</text>
+<text x="741.0" y="261.04999999999995" fill="#808080" font-size="24" font-weight="400" letter-spacing="3" text-anchor="middle" dominant-baseline="middle" font-family="Helvetica Neue, Arial, sans-serif">SETS OVER</text>
+<line x1="650.2" y1="288.29" x2="831.8" y2="288.29" stroke="#333" stroke-width="1"/>
+<text x="741.0" y="320.07" fill="#FFF" font-size="34" font-weight="400" letter-spacing="1" text-anchor="middle" dominant-baseline="middle" font-family="Helvetica Neue, Arial, sans-serif">2150 / 2000</text>
+<text x="741.0" y="356.39" fill="#808080" font-size="22" font-weight="400" letter-spacing="1" text-anchor="middle" dominant-baseline="middle" font-family="Helvetica Neue, Arial, sans-serif">BASE 2000  +0 ACTIVE</text>
+<text x="741.0" y="388.17" fill="#808080" font-size="22" font-weight="400" letter-spacing="2" text-anchor="middle" dominant-baseline="middle" font-family="Helvetica Neue, Arial, sans-serif">SYNCED</text>
+<text x="741.0" y="488" fill="#666" font-size="20" text-anchor="middle" font-family="Helvetica Neue, Arial, sans-serif">over budget</text>
+</svg>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<properties>
+    <property id="serverUrl" type="string"></property>
+    <property id="apiKey" type="string"></property>
+    <property id="kcalPerClick" type="number">50</property>
+    <property id="dailyBudget" type="number">2000</property>
+    <property id="includeActive" type="boolean">true</property>
+    <property id="autoSync" type="boolean">true</property>
+</properties>

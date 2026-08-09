@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<strings>
+    <string id="AppName">Cal Sets</string>
+
+    <string id="MenuTitle">Cal Sets</string>
+    <string id="MenuSync">Sync now</string>
+    <string id="MenuUndo">Undo last set</string>
+    <string id="MenuReset">Reset today</string>
+    <string id="MenuResetConfirm">Reset today to 0?</string>
+
+    <string id="SetServerUrl">Server URL</string>
+    <string id="SetApiKey">API key</string>
+    <string id="SetKcalPerClick">Kcal per set</string>
+    <string id="SetDailyBudget">Base daily budget (kcal)</string>
+    <string id="SetIncludeActive">Add active calories to budget</string>
+    <string id="SetAutoSync">Auto sync after each set</string>
+</strings>
