@@ -16,7 +16,7 @@ import argparse
 import json
 import re
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import openpyxl
@@ -54,11 +54,16 @@ def num(v):
 
 # ---------- classification ----------
 
-def category_of(detail, categories):
-    """סעיף ההכנסה → קטגוריה. 'הכנסות ריטיינר תקופות קודמות' נחשב ריטיינר."""
+def category_of(detail, categories, ret_exclude):
+    """
+    סעיף ההכנסה → קטגוריה.
+
+    'הכנסות ריטיינר תקופות קודמות' הוא חיוב או זיכוי רטרו ולכן נכנס ל-other, לא ל-ret:
+    ה-Tier אמור לשקף את המצב הנוכחי, וסעיף כזה מכיל גם סכומים שליליים על העבר.
+    """
     if detail in categories:
         return categories[detail]
-    if "ריטיינר" in detail:
+    if "ריטיינר" in detail and not any(x in detail for x in ret_exclude):
         return "ret"
     return "other"
 
@@ -94,6 +99,56 @@ def tier_of(retainer, tiers):
 
 
 # ---------- reading ----------
+
+def canonical_name(names):
+    """
+    שם מייצג למשפחה. 16 מ-352 משפחות ח.פ מופיעות תחת יותר משם אחד — איות שונה
+    בשורות שונות, לפעמים עם סיומת כמו 'סיים פעילות'. בוחרים את הנפוץ, ובתיקו את הקצר,
+    כדי שהבחירה לא תהיה תלויה בסדר השורות בדוח.
+    """
+    if not names:
+        return ""
+    return min(names, key=lambda n: (-names[n], len(n), n))
+
+
+def disambiguate(clients):
+    """
+    שני גופים משפטיים יכולים לחלוק שם מסחרי (למשל 'מנהל קהילתי יובלים (ער)' תחת שני ח.פ).
+    שורות כאלה בבורד נראות ככפילות, ולכן מצמידים להן את הח.פ כדי שיהיו נפרדות בעין.
+    """
+    seen = Counter(c["name"] for c in clients)
+    for c in clients:
+        if seen[c["name"]] > 1:
+            tail = f"ח.פ {c['hp']}" if c["hp"] else f"סאפ {c['_sap']}"
+            c["name"] = f"{c['name']} · {tail}"
+    return clients
+
+
+def resolve_hp_by_sap(rows, layout):
+    """
+    ח.פ לכל סאפ, מכל השורות שלו. סאפ→ח.פ הוא 1:1 ולכן זה בטוח.
+
+    בלי זה, שורה שבה עמודת ח.פ ריקה נופלת לקיבוץ לפי סאפ ומייצרת 'לקוח פנטום'
+    שהוא בעצם שבר של לקוח קיים. עמודה 1 ('חפ') משמשת מקור משני.
+    """
+    hp_by_sap = {}
+    conflicts = {}
+    for row in rows:
+        sap = s(row[layout["col_sap"]])
+        if not sap:
+            continue
+        for col in (layout["col_hp"], layout.get("col_hp_alt")):
+            if col is None:
+                continue
+            hp = digits(row[col])
+            if not hp:
+                continue
+            if sap in hp_by_sap and hp_by_sap[sap] != hp:
+                conflicts.setdefault(sap, {hp_by_sap[sap]}).add(hp)
+            else:
+                hp_by_sap.setdefault(sap, hp)
+    return hp_by_sap, conflicts
+
 
 def open_sheet(path):
     if not path.exists():
@@ -134,12 +189,14 @@ def build_clients(path, month, rev, nets):
     skip_details = set(rev["skip_details"])
 
     ws = open_sheet(path)
-    fam = defaultdict(lambda: {"name": "", "hp": "", "saps": set(), "m": dict.fromkeys(CATS, 0.0)})
+    rows = [r for r in ws.iter_rows(min_row=layout["first_data_row"], values_only=True) if any(r)]
+    hp_by_sap, hp_conflicts = resolve_hp_by_sap(rows, layout)
+
+    fam = defaultdict(lambda: {"name": "", "hp": "", "saps": set(),
+                               "names": Counter(), "m": dict.fromkeys(CATS, 0.0)})
     stats = defaultdict(int)
 
-    for row in ws.iter_rows(min_row=layout["first_data_row"], values_only=True):
-        if not any(row):
-            continue
+    for row in rows:
         stats["rows_read"] += 1
         sap = s(row[layout["col_sap"]])
         name = s(row[layout["col_name"]])
@@ -160,14 +217,23 @@ def build_clients(path, month, rev, nets):
             continue
 
         stats["rows_kept"] += 1
-        hp = digits(row[layout["col_hp"]])
+        hp = hp_by_sap.get(sap, "")
+        if not digits(row[layout["col_hp"]]) and hp:
+            stats["hp_recovered"] += 1
         kind, key = family_key(name, hp, sap, nets)
         f = fam[(kind, key)]
         f["saps"].add(sap)
         if hp and not f["hp"]:
             f["hp"] = hp
-        f["name"] = key if kind == "net" else (f["name"] or name)
-        f["m"][category_of(detail, rev["categories"])] += num(row[mcol])
+        if kind == "net":
+            f["name"] = key
+        else:
+            f["names"][name] += 1
+        f["m"][category_of(detail, rev["categories"], rev["retainer_categories_exclude"])] += num(row[mcol])
+
+    for f in fam.values():
+        if not f["name"]:
+            f["name"] = canonical_name(f["names"])
 
     clients = []
     for f in fam.values():
@@ -181,6 +247,7 @@ def build_clients(path, month, rev, nets):
             "name": f["name"],
             "hp": f["hp"],
             "nsap": len(f["saps"]),
+            "_sap": min(f["saps"]),
             "ret": round(m["ret"]),
             "mod": round(m["mod"]),
             "sms": round(m["sms"] + m["sms1"]),
@@ -192,8 +259,10 @@ def build_clients(path, month, rev, nets):
             "total": round(sum(m.values())),
         })
 
+    disambiguate(clients)
     clients.sort(key=lambda c: -c["ret"])
-    return clients, stats
+    stats["hp_conflicts"] = len(hp_conflicts)
+    return clients, stats, hp_conflicts
 
 
 # ---------- writing ----------
@@ -240,6 +309,7 @@ def report(clients, stats, month, rev):
     ]:
         print(f"{label}: {stats[k]:>7,}")
     print(f"שורות לקוח נותרו: {stats['rows_kept']:>5,}")
+    print(f"ח.פ שוחזר משורה אחרת: {stats['hp_recovered']:>3,}")
     print(f"נזרקו (ריטיינר 0): {stats['dropped_zero_retainer']:>5,}")
 
     print(f"\nלקוחות: {len(clients)}")
@@ -287,7 +357,11 @@ def main():
     if not args.month:
         sys.exit("חסר --month (למשל --month 2026-06). --inspect מראה אילו עמודות חודש קיימות.")
 
-    clients, stats = build_clients(path, args.month, rev, nets)
+    clients, stats, hp_conflicts = build_clients(path, args.month, rev, nets)
+    if hp_conflicts:
+        print("⚠️  סאפ עם יותר מח.פ אחד — ההנחה של 1:1 נשברה, לבדוק:")
+        for sap, hps in list(hp_conflicts.items())[:10]:
+            print(f"     סאפ {sap}: {', '.join(sorted(hps))}")
     report(clients, stats, args.month, rev)
     xlsx, js = write_outputs(clients, args.month, rev)
     print(f"\nנכתב:\n  {xlsx.relative_to(ROOT)}  ← לייבוא ל-monday\n  {js.relative_to(ROOT)}")
