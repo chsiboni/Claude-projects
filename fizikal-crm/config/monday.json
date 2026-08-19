@@ -1,9 +1,10 @@
 {
   "_comment": "מזהי בורדים ועמודות — נשלפו חיים מ-monday ב-19/08/2026. תמיד לאמת מול get_board_info לפני כתיבה, מזהים משתנים כשמוסיפים/מוחקים עמודות.",
   "_plan": "Basic · 25 משתמשים · מגבלת 10,000 פריטים לבורד. Connect boards + Mirror דורש Standard — לא זמין. הקישור בין בורדים נעשה דרך קוד חברה / ח.פ + קיבוץ.",
-
-  "workspace": { "id": 7042090, "name": "CRM לקוחות — Fizikal" },
-
+  "workspace": {
+    "id": 7042090,
+    "name": "CRM לקוחות — Fizikal"
+  },
   "boards": {
     "clients": {
       "id": 5100722656,
@@ -31,9 +32,10 @@
         "קטן": "group_mm5epkna",
         "מוב": "group_mm5e39av"
       },
-      "_todo": "העמודות 'סה\"כ יוני' נעולות לחודש בשם. בעדכון החודשי או לשנות כותרת, או להוסיף עמודת 'חודש הדוח'. וכן: חסרות קבוצות '<tier> - לא פעילים' לארכיון (Chen ביקש קבוצות כפולות כדי שה-sum יישאר נקי)."
+      "_todo": "העמודות 'סה\"כ יוני' נעולות לחודש בשם. בעדכון החודשי או לשנות כותרת, או להוסיף עמודת 'חודש הדוח'. וכן: חסרות קבוצות '<tier> - לא פעילים' לארכיון (Chen ביקש קבוצות כפולות כדי שה-sum יישאר נקי).",
+      "_superseded_by": 5102514504,
+      "_stale": "מחזיק נתוני יוני מהלוגיקה הבאגית — אייקון פיטנס רשום ₪103,420 אבל הנהלת החשבונות תיקנה את יוני ל-₪93,970 בדוח יולי. 218 מ-404 השורות בלי ח.פ."
     },
-
     "branches_active": {
       "id": 5100725833,
       "name": "סניפים - לקוחות פעילים",
@@ -68,9 +70,11 @@
         "טפסים דיגיטליים": "color_mm58mx7t",
         "רכישה אינטרנטית": "color_mm58ysrv"
       },
-      "groups": { "import": "group_mm58xq4h", "default": "topics" }
+      "groups": {
+        "import": "group_mm58xq4h",
+        "default": "topics"
+      }
     },
-
     "contacts_active": {
       "id": 5100725547,
       "name": "אנשי קשר - לקוחות פעילים",
@@ -90,9 +94,11 @@
         "email": "email_mm5et1fh",
         "gender": "color_mm5esd9w"
       },
-      "groups": { "import": "group_mm5fvtx9", "default": "topics" }
+      "groups": {
+        "import": "group_mm5fvtx9",
+        "default": "topics"
+      }
     },
-
     "clients_manual": {
       "id": 5100725584,
       "name": "לקוחות להשלמה ידנית",
@@ -111,10 +117,61 @@
         "phone_fill": "phone_mm5ex23b",
         "email_fill": "email_mm5ezt3p"
       },
-      "groups": { "default": "topics" }
+      "groups": {
+        "default": "topics"
+      }
+    },
+    "clients_new": {
+      "id": 5102514504,
+      "name": "לקוחות — יולי 2026 (חדש)",
+      "items": 0,
+      "key": "מספר סאפ",
+      "_status": "מבנה בנוי, ממתין לייבוא 436 השורות מ-out/clients_status_<חודש>.xlsx.",
+      "_purpose": "הבורד שיחליף את 5100722656. נבנה ב-duplicate_board_with_structure כדי לשמר את העיצוב והקבוצות, ואז נוספו עמודות הסטטוס וההיסטוריה. לא מוחקים את הישן עד שChen משווה ומאשר.",
+      "_key_note": "מספר סאפ הוא מפתח העדכון החודשי, לא ח.פ ולא שם. ח.פ חסר ב-54% משורות הבורד הישן וב-25% מפלט הצינור, ושם לא יציב: אותה משפחה נקראה 'קאנטרי ג'' בקובץ יוני ו'בארבור' בקובץ יולי, ובבורד הישן יש שתי שורות בשם 'ליאור פרי'. לסאפ יש כיסוי 100% והוא לא משתנה בין חודשים.",
+      "columns": {
+        "tier": "color_mm5ek8b7",
+        "ret": "numeric_mm5eg8zc",
+        "hp": "text_mm5ebgdf",
+        "total": "numeric_mm5e8vkc",
+        "mod": "numeric_mm5est6v",
+        "sms": "numeric_mm5ed29j",
+        "train": "numeric_mm5es0d5",
+        "dev": "numeric_mm5en4ar",
+        "hw": "numeric_mm5eg10t",
+        "tags": "numeric_mm5en13f",
+        "other": "numeric_mm5evjsk",
+        "nsap": "numeric_mm5eg2r5",
+        "sap": "text_mm6ccg01",
+        "month": "text_mm6cwf83",
+        "status": "color_mm6cyme4",
+        "gap": "numeric_mm6cqean",
+        "last_paid": "text_mm6cecj",
+        "prev": "numeric_mm6crqtw",
+        "change": "numeric_mm6cn5sj",
+        "ret_last": "numeric_mm6cae3h"
+      },
+      "groups": {
+        "VIP": "group_mm5etsbe",
+        "גדול": "group_mm5ek3c1",
+        "בינוני": "group_mm5ekv6x",
+        "קטן": "group_mm5epkna",
+        "מוב": "group_mm5e39av",
+        "VIP-inactive": "group_mm6c6mva",
+        "גדול-inactive": "group_mm6c3g6d",
+        "בינוני-inactive": "group_mm6cfw22",
+        "קטן-inactive": "group_mm6cs11v",
+        "מוב-inactive": "group_mm6c2cfv"
+      },
+      "statuses": [
+        "פעיל",
+        "בסיכון",
+        "לא פעיל",
+        "חדש"
+      ],
+      "inactive_after_months": 2
     }
   },
-
   "archived": {
     "_comment": "בארכיון, לא נמחקו. אפשר לשחזר אם צריך את הנתונים המלאים.",
     "5100274544": "חברות (971) — כפילות עם 'לקוחות' לפי החלטת Chen",
@@ -122,7 +179,6 @@
     "5100274548": "אנשי קשר (4,636) — כל אנשי הקשר",
     "5100721833": "לקוחות - ניסיון מבנה 2 (25)"
   },
-
   "api_gotchas": {
     "import_beats_api": "ייבוא Excel נייטיבי מהיר פי 10 מטעינה דרך API. API רק לעדכונים נקודתיים ומחיקות.",
     "excel_first_column": "העמודה הראשונה חייבת להיקרא Name ולהכיל את שם הפריט, אחרת כל השורות נכשלות ב-'Name must not be empty'. ב-Map columns לאמת Name → Item, וב-Handle matches לבחור Add all rows as new items.",
@@ -133,7 +189,6 @@
     "duplicate_not_rebuild": "ליצירת עותק מסונן: duplicate_board(duplicate_type: duplicate_board_with_pulses) ואז למחוק פריטים. בנייה מאפס מאבדת עמודות.",
     "status_defaults_format": "create_column עם defaults — labels חייב להיות אובייקט ממופתח ({\"1\":\"VIP\"}), מערך נכשל. labels_colors באותו מפתח עם color/border/var_name."
   },
-
   "field_formats": {
     "email": "{\"email\": \"a@b.com\", \"text\": \"a@b.com\"} — שני השדות חובה",
     "phone": "\"0501234567\" — ספרות בלבד, מקפים נדחים",
