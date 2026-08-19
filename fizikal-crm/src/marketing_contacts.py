@@ -175,42 +175,66 @@ def build_contacts(month):
     return contacts, sorted(review.values(), key=lambda r: (r["why"], r["name"]))
 
 
-def dedupe(contacts, field):
+def build_mailing_list(contacts):
     """
-    שורה אחת לכל נייד/מייל ייחודי. הנציג הוא הרשומה בעלת ה-Tier הגבוה ביותר,
-    ובעדיפות איש קשר מטפל, כדי שהשורה שנשארת תהיה המשמעותית ביותר.
-    """
-    groups = defaultdict(list)
-    for c in contacts:
-        if c[field]:
-            groups[c[field]].append(c)
+    רשימת דיוור אחת: שורה לכל אדם, נייד ומייל זה לצד זה.
 
-    out = []
-    for key, group in groups.items():
-        best = min(group, key=lambda c: (TIER_ORDER.get(c["tier"], 5),
-                                        c["primary"] != "כן", c["client"] or "zz"))
+    שתי בעיות שהדה-דופליקציה פותרת, כל אחת על השדה שלה:
+      · אותו אדם רשום בכל סניף שהוא מנהל, ולכן אותו נייד חוזר עד 21 פעם.
+      · שני אנשים שונים חולקים מייל אחד (מייל של משרד), ואז אותה כתובת מקבלת פעמיים.
+
+    לכן שורה אחת לכל נייד ייחודי, ובנוסף מי שיש לו מייל בלבד — כדי לא לאבד אותו.
+    מייל שכבר הופיע בשורה קודמת מנוקה מהשורה הנוכחית: האדם נשאר עם הנייד שלו,
+    והכתובת לא תקבל פעמיים.
+    """
+    def rank(c):
+        # הנציג הוא הרשומה המשמעותית ביותר: Tier גבוה, ובעדיפות איש קשר מטפל
+        return (TIER_ORDER.get(c["tier"], 5), c["primary"] != "כן", c["client"] or "zz")
+
+    by_mobile = defaultdict(list)
+    email_only = defaultdict(list)
+    for c in contacts:
+        if c["mobile"]:
+            by_mobile[c["mobile"]].append(c)
+        elif c["email"]:
+            email_only[c["email"]].append(c)
+
+    def represent(group):
+        best = min(group, key=rank)
         clients = sorted({c["client"] or c["company"] for c in group})
-        out.append({**best, "n_rows": len(group), "n_clients": len(clients),
-                    "all_clients": " · ".join(clients[:6]) + (" …" if len(clients) > 6 else "")})
-    out.sort(key=lambda c: (TIER_ORDER.get(c["tier"], 5), c["client"] or "zz", c["name"]))
-    return out
+        return {**best, "n_rows": len(group), "n_clients": len(clients),
+                "all_clients": " · ".join(clients[:6]) + (" …" if len(clients) > 6 else "")}
+
+    rows = [represent(g) for g in by_mobile.values()]
+    rows += [represent(g) for g in email_only.values()]
+    rows.sort(key=lambda c: (TIER_ORDER.get(c["tier"], 5), c["client"] or "zz", c["name"]))
+
+    # מייל שנשמט כי בעל הנייד שלו לא נבחר כנציג — מוחזר, אחרת נאבדת כתובת
+    kept = {r["email"] for r in rows if r["email"]}
+    all_emails = {c["email"] for c in contacts if c["email"]}
+    for missing in sorted(all_emails - kept):
+        group = [c for c in contacts if c["email"] == missing]
+        rows.append({**represent(group), "mobile": ""})
+
+    seen, dup_emails = set(), 0
+    for r in rows:
+        if r["email"]:
+            if r["email"] in seen:
+                r["email"] = ""
+                dup_emails += 1
+            else:
+                seen.add(r["email"])
+    return rows, dup_emails
 
 
 SHEETS = {
-    "דיוור - ניידים": (
-        [("שם", "name", 24), ("נייד", "mobile", 14), ("Tier", "tier", 9),
-         ("לקוח", "client", 30), ("שם חברה", "company", 28), ("שם סניף", "branch", 26),
-         ("תפקיד", "role", 13), ("איש קשר מטפל", "primary", 13),
-         ("מייל", "email", 30), ("מס' שורות במקור", "n_rows", 9),
+    "דיוור": (
+        [("שם", "name", 24), ("נייד", "mobile", 14), ("מייל", "email", 32),
+         ("Tier", "tier", 9), ("לקוח", "client", 30), ("שם חברה", "company", 28),
+         ("שם סניף", "branch", 26), ("תפקיד", "role", 13),
+         ("איש קשר מטפל", "primary", 13), ("מס' שורות במקור", "n_rows", 9),
          ("מס' לקוחות", "n_clients", 9), ("כל הלקוחות", "all_clients", 44)],
-        "שורה אחת לכל נייד ייחודי — מוכן להזנה למערכת SMS."),
-    "דיוור - מיילים": (
-        [("שם", "name", 24), ("מייל", "email", 32), ("Tier", "tier", 9),
-         ("לקוח", "client", 30), ("שם חברה", "company", 28), ("שם סניף", "branch", 26),
-         ("תפקיד", "role", 13), ("איש קשר מטפל", "primary", 13),
-         ("נייד", "mobile", 14), ("מס' שורות במקור", "n_rows", 9),
-         ("מס' לקוחות", "n_clients", 9), ("כל הלקוחות", "all_clients", 44)],
-        "שורה אחת לכל מייל ייחודי — מוכן להזנה למערכת דיוור."),
+        "שורה אחת לכל אדם — נייד ומייל זה לצד זה, בלי כפילויות. מוכן להזנה לדיוור ול-SMS."),
     "כל אנשי הקשר": (
         [("שם", "name", 24), ("נייד", "mobile", 14), ("מייל", "email", 30),
          ("Tier", "tier", 9), ("לקוח", "client", 30), ("שם חברה", "company", 28),
@@ -222,7 +246,7 @@ SHEETS = {
         [("שם", "name", 26), ("סיבת ההחרגה", "internal", 34), ("נייד", "mobile", 14),
          ("מייל", "email", 30), ("שם חברה", "company", 28), ("שם סניף", "branch", 26),
          ("תפקיד", "role", 13)],
-        "הוחרג מגיליונות הדיוור. אם רשומה כאן היא בעצם לקוח אמיתי — להעביר אותה ידנית."),
+        "הוחרג מגיליון הדיוור. אם רשומה כאן היא בעצם לקוח אמיתי — להעביר אותה ידנית."),
     "לבדיקה": (
         [("שם", "name", 30), ("הערך במקור", "raw", 18), ("הבעיה", "why", 42),
          ("Tier", "tier", 9), ("לקוח", "client", 30), ("שם סניף", "branch", 26),
@@ -280,28 +304,29 @@ def main():
     sendable = [c for c in contacts if not c["internal"]]
     internal = sorted((c for c in contacts if c["internal"]),
                       key=lambda c: (c["internal"], c["name"]))
-    by_mobile = dedupe(sendable, "mobile")
-    by_email = dedupe(sendable, "email")
+    mailing, dup_emails = build_mailing_list(sendable)
 
     for c in contacts:
         c.setdefault("n_rows", 1)
     path = write_xlsx({
-        "דיוור - ניידים": by_mobile,
-        "דיוור - מיילים": by_email,
+        "דיוור": mailing,
         "כל אנשי הקשר": contacts,
         "פנימי ובדיקה - לא לדיוור": internal,
         "לבדיקה": review,
     }, args.month)
 
     tiers = defaultdict(int)
-    for c in by_mobile:
+    for c in mailing:
         tiers[c["tier"] or "לא זוהה"] += 1
+    n_mob = sum(1 for c in mailing if c["mobile"])
+    n_mail = sum(1 for c in mailing if c["email"])
     print(f"אנשי קשר במקור:      {len(contacts):>6,}")
     print(f"הוחרגו כפנימי/בדיקה: {len(internal):>6,}")
-    print(f"ניידים ייחודיים:     {len(by_mobile):>6,}   ({len(contacts) - len(by_mobile):,} כפילויות הוסרו)")
-    print(f"מיילים ייחודיים:     {len(by_email):>6,}")
+    print(f"שורות בגיליון דיוור: {len(mailing):>6,}   ({len(sendable) - len(mailing):,} כפילויות הוסרו)")
+    print(f"  מהן עם נייד:       {n_mob:>6,}")
+    print(f"  מהן עם מייל:       {n_mail:>6,}   ({dup_emails:,} מיילים כפולים נוקו)")
     print(f"לבדיקה ידנית:        {len(review):>6,}")
-    print("\nניידים לפי Tier של הלקוח:")
+    print("\nלפי Tier של הלקוח:")
     for t in sorted(tiers, key=lambda t: TIER_ORDER.get(t, 9)):
         print(f"  {t:<10} {tiers[t]:>5,}")
     print(f"\nנכתב: {path.relative_to(ROOT)}")
