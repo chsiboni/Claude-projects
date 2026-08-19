@@ -129,25 +129,33 @@ def resolve_hp_by_sap(rows, layout):
     ח.פ לכל סאפ, מכל השורות שלו. סאפ→ח.פ הוא 1:1 ולכן זה בטוח.
 
     בלי זה, שורה שבה עמודת ח.פ ריקה נופלת לקיבוץ לפי סאפ ומייצרת 'לקוח פנטום'
-    שהוא בעצם שבר של לקוח קיים. עמודה 1 ('חפ') משמשת מקור משני.
+    שהוא בעצם שבר של לקוח קיים.
+
+    לדוח שתי עמודות ח.פ, והן לא שוות בערכן: העמודה הראשית קובעת, והמשנית משמשת
+    רק כשאין לסאפ שום ערך בראשית. הסדר הזה חשוב — המשנית סותרת את הראשית בכמה
+    סאפים בודדים (נראה כמו שגיאות הקלדה), אבל היא מוסיפה ח.פ למעל מאה לקוחות
+    שאחרת היו מקובצים לפי סאפ ולא ניתנים להצלבה מול הסניפים.
     """
-    hp_by_sap = {}
-    conflicts = {}
+    primary, secondary, conflicts = {}, {}, {}
     for row in rows:
         sap = s(row[layout["col_sap"]])
         if not sap:
             continue
-        for col in (layout["col_hp"], layout.get("col_hp_alt")):
-            if col is None:
-                continue
-            hp = digits(row[col])
-            if not hp:
-                continue
-            if sap in hp_by_sap and hp_by_sap[sap] != hp:
-                conflicts.setdefault(sap, {hp_by_sap[sap]}).add(hp)
-            else:
-                hp_by_sap.setdefault(sap, hp)
-    return hp_by_sap, conflicts
+        hp = digits(row[layout["col_hp"]])
+        if hp:
+            if sap in primary and primary[sap] != hp:
+                conflicts.setdefault(sap, {primary[sap]}).add(hp)
+            primary.setdefault(sap, hp)
+        alt_col = layout.get("col_hp_alt")
+        if alt_col is not None:
+            alt = digits(row[alt_col])
+            if alt:
+                secondary.setdefault(sap, alt)
+
+    hp_by_sap = dict(secondary)
+    hp_by_sap.update(primary)   # הראשית דורסת את המשנית
+    recovered = {sap for sap in secondary if sap not in primary}
+    return hp_by_sap, conflicts, recovered
 
 
 def open_sheet(path):
@@ -190,7 +198,7 @@ def build_clients(path, month, rev, nets):
 
     ws = open_sheet(path)
     rows = [r for r in ws.iter_rows(min_row=layout["first_data_row"], values_only=True) if any(r)]
-    hp_by_sap, hp_conflicts = resolve_hp_by_sap(rows, layout)
+    hp_by_sap, hp_conflicts, hp_from_alt = resolve_hp_by_sap(rows, layout)
 
     fam = defaultdict(lambda: {"name": "", "hp": "", "saps": set(),
                                "names": Counter(), "m": dict.fromkeys(CATS, 0.0)})
@@ -262,6 +270,7 @@ def build_clients(path, month, rev, nets):
     disambiguate(clients)
     clients.sort(key=lambda c: -c["ret"])
     stats["hp_conflicts"] = len(hp_conflicts)
+    stats["hp_from_alt"] = len(hp_from_alt)
     return clients, stats, hp_conflicts
 
 
@@ -310,6 +319,7 @@ def report(clients, stats, month, rev):
         print(f"{label}: {stats[k]:>7,}")
     print(f"שורות לקוח נותרו: {stats['rows_kept']:>5,}")
     print(f"ח.פ שוחזר משורה אחרת: {stats['hp_recovered']:>3,}")
+    print(f"ח.פ מהעמודה המשנית: {stats['hp_from_alt']:>5,} סאפים")
     print(f"נזרקו (ריטיינר 0): {stats['dropped_zero_retainer']:>5,}")
 
     print(f"\nלקוחות: {len(clients)}")
