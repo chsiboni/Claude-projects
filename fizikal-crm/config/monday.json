@@ -1,0 +1,144 @@
+{
+  "_comment": "מזהי בורדים ועמודות — נשלפו חיים מ-monday ב-19/08/2026. תמיד לאמת מול get_board_info לפני כתיבה, מזהים משתנים כשמוסיפים/מוחקים עמודות.",
+  "_plan": "Basic · 25 משתמשים · מגבלת 10,000 פריטים לבורד. Connect boards + Mirror דורש Standard — לא זמין. הקישור בין בורדים נעשה דרך קוד חברה / ח.פ + קיבוץ.",
+
+  "workspace": { "id": 7042090, "name": "CRM לקוחות — Fizikal" },
+
+  "boards": {
+    "clients": {
+      "id": 5100722656,
+      "name": "לקוחות חדש",
+      "items": 404,
+      "key": "ח.פ",
+      "columns": {
+        "tier": "color_mm5ek8b7",
+        "ret": "numeric_mm5eg8zc",
+        "hp": "text_mm5ebgdf",
+        "total": "numeric_mm5e8vkc",
+        "mod": "numeric_mm5est6v",
+        "sms": "numeric_mm5ed29j",
+        "train": "numeric_mm5es0d5",
+        "dev": "numeric_mm5en4ar",
+        "hw": "numeric_mm5eg10t",
+        "tags": "numeric_mm5en13f",
+        "other": "numeric_mm5evjsk",
+        "nsap": "numeric_mm5eg2r5"
+      },
+      "groups": {
+        "VIP": "group_mm5etsbe",
+        "גדול": "group_mm5ek3c1",
+        "בינוני": "group_mm5ekv6x",
+        "קטן": "group_mm5epkna",
+        "מוב": "group_mm5e39av"
+      },
+      "_todo": "העמודות 'סה\"כ יוני' נעולות לחודש בשם. בעדכון החודשי או לשנות כותרת, או להוסיף עמודת 'חודש הדוח'. וכן: חסרות קבוצות '<tier> - לא פעילים' לארכיון (Chen ביקש קבוצות כפולות כדי שה-sum יישאר נקי)."
+    },
+
+    "branches_active": {
+      "id": 5100725833,
+      "name": "סניפים - לקוחות פעילים",
+      "items": 910,
+      "key": "קוד חברה",
+      "_origin": "שוכפל מבורד סניפים המקורי (5100274547, כיום בארכיון) ב-duplicate_board_with_pulses, ואז נמחקו הלא-פעילים. מזהי העמודות זהים למקור — שכפול משמר אותם.",
+      "columns": {
+        "company_code": "numeric_mm58rebk",
+        "branch_no": "numeric_mm588920",
+        "company_name": "text_mm58jnmj",
+        "hp": "text_mm58je81",
+        "accounting_name": "text_mm588r91",
+        "join_date": "date_mm58nnbs",
+        "phone": "phone_mm583ngt",
+        "email": "email_mm58n8pm",
+        "address": "text_mm58nw94",
+        "business_type": "color_mm58djv2",
+        "active": "color_mm589g9g",
+        "active_count": "numeric_mm58vbcd",
+        "extra_stations": "numeric_mm586d5a",
+        "credit_clearer": "text_mm58fne",
+        "app": "color_mm58y0fa",
+        "level": "text_mm58exz1"
+      },
+      "product_flags": {
+        "עמדה ראשונה": "color_mm58fjrn",
+        "בקרת שערים": "color_mm58d459",
+        "MOVE": "color_mm58jg1a",
+        "ניהול מלאי": "color_mm58akgg",
+        "סריקת מסמכים": "color_mm58e9mc",
+        "קופה רושמת": "color_mm589zwx",
+        "טפסים דיגיטליים": "color_mm58mx7t",
+        "רכישה אינטרנטית": "color_mm58ysrv"
+      },
+      "groups": { "import": "group_mm58xq4h", "default": "topics" }
+    },
+
+    "contacts_active": {
+      "id": 5100725547,
+      "name": "אנשי קשר - לקוחות פעילים",
+      "items": 3524,
+      "key": "קוד חברה + מספר סניף",
+      "_gap": "יובאו 3,524 מתוך 3,559 בקובץ — פער של 35 שורות, טרם נבדק.",
+      "columns": {
+        "company_code": "numeric_mm5eqpnc",
+        "company_name": "text_mm5evq22",
+        "start_date": "date_mm5ehdcf",
+        "branch_no": "numeric_mm5e95s8",
+        "branch_name": "text_mm5epmze",
+        "permission": "color_mm5evw8k",
+        "active": "color_mm5eh634",
+        "is_handler": "color_mm5e2h0q",
+        "phone": "phone_mm5ectgq",
+        "email": "email_mm5et1fh",
+        "gender": "color_mm5esd9w"
+      },
+      "groups": { "import": "group_mm5fvtx9", "default": "topics" }
+    },
+
+    "clients_manual": {
+      "id": 5100725584,
+      "name": "לקוחות להשלמה ידנית",
+      "items": 0,
+      "_status": "ריק — העמודות בנויות, ממתין לייבוא 171 השורות.",
+      "columns": {
+        "hp": "text_mm5et2rk",
+        "tier": "color_mm5e17q1",
+        "fill_status": "color_mm5ejdqz",
+        "ret": "numeric_mm5erhxf",
+        "total": "numeric_mm5es1x2",
+        "nsap": "numeric_mm5ehw9k",
+        "company_code_fill": "text_mm5ehnme",
+        "branch_name_fill": "text_mm5ek8q2",
+        "contact_fill": "text_mm5ewjmm",
+        "phone_fill": "phone_mm5ex23b",
+        "email_fill": "email_mm5ezt3p"
+      },
+      "groups": { "default": "topics" }
+    }
+  },
+
+  "archived": {
+    "_comment": "בארכיון, לא נמחקו. אפשר לשחזר אם צריך את הנתונים המלאים.",
+    "5100274544": "חברות (971) — כפילות עם 'לקוחות' לפי החלטת Chen",
+    "5100274547": "סניפים (1,709) — כל הסניפים, כולל לא-פעילים",
+    "5100274548": "אנשי קשר (4,636) — כל אנשי הקשר",
+    "5100721833": "לקוחות - ניסיון מבנה 2 (25)"
+  },
+
+  "api_gotchas": {
+    "import_beats_api": "ייבוא Excel נייטיבי מהיר פי 10 מטעינה דרך API. API רק לעדכונים נקודתיים ומחיקות.",
+    "excel_first_column": "העמודה הראשונה חייבת להיקרא Name ולהכיל את שם הפריט, אחרת כל השורות נכשלות ב-'Name must not be empty'. ב-Map columns לאמת Name → Item, וב-Handle matches לבחור Add all rows as new items.",
+    "excel_lands_in_one_group": "הייבוא שופך הכל לקבוצה אחת בשם הקובץ — צריך move_item_to_group אחר כך (25 פעולות למנה עובד טוב).",
+    "checkbox_broken": "עמודת checkbox דוחה 'כן' / 'v' / 'V' בייבוא ('is not a valid checkbox value') — 1,556 שורות נכשלו כך. הפתרון: להמיר את כל הדגלים ל-status, שמקבל 'כן'.",
+    "create_items_limit": "create_items — מקסימום 20 פריטים לקריאה.",
+    "execute_code_timeout": "timeout 180 שניות, וכשנחתך כל הריצה מבוטלת ולא נשמר כלום. הפתרון: מוטציות מרובות (20–25 פעולות בקריאה), סקריפט resumable, ותקציב זמן פנימי (~140 שניות).",
+    "duplicate_not_rebuild": "ליצירת עותק מסונן: duplicate_board(duplicate_type: duplicate_board_with_pulses) ואז למחוק פריטים. בנייה מאפס מאבדת עמודות.",
+    "status_defaults_format": "create_column עם defaults — labels חייב להיות אובייקט ממופתח ({\"1\":\"VIP\"}), מערך נכשל. labels_colors באותו מפתח עם color/border/var_name."
+  },
+
+  "field_formats": {
+    "email": "{\"email\": \"a@b.com\", \"text\": \"a@b.com\"} — שני השדות חובה",
+    "phone": "\"0501234567\" — ספרות בלבד, מקפים נדחים",
+    "date": "{\"date\": \"YYYY-MM-DD\"}",
+    "status": "{\"label\": \"כן\"} + create_labels_if_missing: true",
+    "numbers": "מספר או מחרוזת ספרות"
+  }
+}

@@ -2,3 +2,10 @@ node_modules/
 npm-debug.log
 .DS_Store
 .env
+
+# Fizikal CRM — נתונים רגישים, לא נכנסים לגיט
+fizikal-crm/data/*
+!fizikal-crm/data/.gitkeep
+fizikal-crm/out/*
+!fizikal-crm/out/.gitkeep
+*.xlsx
