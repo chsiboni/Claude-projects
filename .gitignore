@@ -9,3 +9,4 @@ fizikal-crm/data/*
 fizikal-crm/out/*
 !fizikal-crm/out/.gitkeep
 *.xlsx
+__pycache__/
