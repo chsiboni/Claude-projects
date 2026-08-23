@@ -1,0 +1,23 @@
+{
+  "skill_name": "gviya-shotef",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "העליתי את דוח הגיול החדש, תבדוק מי מהלקוחות בתחום השוטף ותראה לי לפני שאתה מזיז",
+      "expected_output": "Classification report: clean list with due dates, suspect list with recycled-debt reasons, already-in-stage validation. No monday writes.",
+      "files": ["aging.xlsx", "board_dump.json", "history/"]
+    },
+    {
+      "id": 2,
+      "prompt": "תעביר את מי שבשוטף לעמודה המתאימה בלוח הגבייה",
+      "expected_output": "Runs classification, shows lists, STOPS for approval before any stage move; after approval moves only approved cards with per-card documented update note.",
+      "files": ["aging.xlsx"]
+    },
+    {
+      "id": 3,
+      "prompt": "מי מהלקוחות בחוב הוא בעצם לא באמת בפיגור?",
+      "expected_output": "Same classification, presented as an answer; suspects (recycled debt) clearly separated from genuinely-within-terms clients.",
+      "files": ["aging.xlsx", "board_dump.json"]
+    }
+  ]
+}
