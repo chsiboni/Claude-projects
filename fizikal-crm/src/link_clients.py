@@ -44,9 +44,18 @@ def norm(t):
 
 
 def read_companies():
-    ws = openpyxl.load_workbook(COMPANIES, data_only=True)["חברות"]
-    idx = {c.value: n for n, c in enumerate(ws[1])}
+    """
+    בונה את המיפוי ח.פ→מס חברה מגיליון *הסניפים*, לא מגיליון החברות.
+
+    121 חברות מחזיקות יותר מח.פ אחד בין הסניפים (מוסדות: 6, פרופיט: 10),
+    וכרטיס החברה שומר רק אחד מהם — מי שמצליב מולו מפספס את כל השאר.
+    השמות נאספים משני הגיליונות, כולל שם בהנה"ח ברמת הסניף.
+    """
+    wb = openpyxl.load_workbook(COMPANIES, data_only=True)
     by_hp, by_name = defaultdict(set), defaultdict(set)
+
+    ws = wb["סניפים"]
+    idx = {c.value: n for n, c in enumerate(ws[1])}
     for r in ws.iter_rows(min_row=2, values_only=True):
         code = digits(r[idx["קוד חברה"]])
         if not code:
@@ -54,9 +63,22 @@ def read_companies():
         hp = pad(digits(r[idx["ח.פ"]]))
         if hp:
             by_hp[hp].add(code)
-        for col in ('שם בהנה"ח', "שם חברה"):
+        for col in ('שם בהנה"ח', "שם חברה", "שם סניף"):
             if norm(r[idx[col]]):
                 by_name[norm(r[idx[col]])].add(code)
+
+    ws2 = wb["חברות"]
+    idx2 = {c.value: n for n, c in enumerate(ws2[1])}
+    for r in ws2.iter_rows(min_row=2, values_only=True):
+        code = digits(r[idx2["קוד חברה"]])
+        if not code:
+            continue
+        hp = pad(digits(r[idx2["ח.פ"]]))
+        if hp:
+            by_hp[hp].add(code)
+        for col in ('שם בהנה"ח', "שם חברה"):
+            if norm(r[idx2[col]]):
+                by_name[norm(r[idx2[col]])].add(code)
     return by_hp, by_name
 
 

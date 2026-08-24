@@ -142,14 +142,15 @@ def resolve_hp_by_sap(rows, layout):
         if not sap:
             continue
         hp = digits(row[layout["col_hp"]])
-        if hp:
+        # '0' הוא ערך זבל שמוקלד כשאין ח.פ — לא לתת לו לחסום את העמודה המשנית
+        if hp.strip("0"):
             if sap in primary and primary[sap] != hp:
                 conflicts.setdefault(sap, {primary[sap]}).add(hp)
             primary.setdefault(sap, hp)
         alt_col = layout.get("col_hp_alt")
         if alt_col is not None:
             alt = digits(row[alt_col])
-            if alt:
+            if alt.strip("0"):
                 secondary.setdefault(sap, alt)
 
     hp_by_sap = dict(secondary)
