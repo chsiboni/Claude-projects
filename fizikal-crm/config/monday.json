@@ -196,6 +196,30 @@
         "sales": "person"
       },
       "_finding": "51 לקוחות סיימו או באמצע אונבורדינג, לא בוטלו, ולא קיימים בבורד הסניפים — ₪12,052 תשלום חודשי. מהם 39 ב'אונבורדינג הסתיים', כלומר אמורים להתחיל לשלם."
+    },
+    "clarification": {
+      "id": 5102813566,
+      "name": "לקוחות לבירור — קישור לפיזיקל",
+      "items": 50,
+      "_purpose": "בורד שמנהלים ממלאים: 50 לקוחות משלמים מהנה\"ח שלא הוצלבו למס חברה בפיזיקל. המנהל ממלא סטטוס בירור + מס חברה, או פרטי איש קשר אם הלקוח לא במערכת.",
+      "columns": {
+        "fill_status": "color_mm6h6jjc",
+        "company_code_fill": "text_mm6hrxxv",
+        "contact_fill": "text_mm6hyq3x",
+        "phone_fill": "text_mm6hf6c9",
+        "email_fill": "email_mm6hz0w5",
+        "notes": "text_mm6hrqk4",
+        "tier": "color_mm6h606t",
+        "ret": "numeric_mm6hekey",
+        "hp": "text_mm6hg9j1",
+        "sap": "text_mm6h743f"
+      },
+      "groups": {
+        "fill": "group_mm6he17j",
+        "not_in_db": "group_mm6hvwf2",
+        "inactive": "group_mm6h5bbr"
+      },
+      "_not_in_main_db": "קונטקסט ממשה (המפתח): אייקון פיטנס, הולמס פלייס, מכון ויצמן (קאנטרי + מכון כושר) ומכבים לא מנוהלים בדאטהבייס הראשי של פיזיקל — לא יוצלבו לעולם. שאלה פתוחה לחן: איך הם עוברים לגרסה החדשה."
     }
   },
   "archived": {
