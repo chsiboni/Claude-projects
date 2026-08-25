@@ -1,0 +1,26 @@
+{
+  "name": "bank-insights",
+  "version": "1.0.0",
+  "description": "ממשק ניתוח פיננסי אישי — איסוף אוטומטי מבנק הפועלים וכרטיסי אשראי, מקומי בלבד",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "collect": "node src/collect.js",
+    "collect:headful": "SHOW_BROWSER=1 node src/collect.js",
+    "reclassify": "node src/reclassify.js",
+    "demo": "node src/demo.js",
+    "start:demo": "DB_PATH=data/demo.db node src/server.js"
+  },
+  "engines": {
+    "node": ">=22.22.2"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "israeli-bank-scrapers": "^6.9.0",
+    "node-cron": "^3.0.3"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>ניתוח פיננסי אישי</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+</head>
+<body>
+  <header>
+    <div class="wrap head-row">
+      <h1>ניתוח פיננסי אישי</h1>
+      <div class="status" id="status"><span class="dot"></span><span id="status-text">טוען…</span></div>
+      <div class="head-spacer"></div>
+      <select id="month-select" aria-label="בחירת חודש"></select>
+      <button id="refresh" class="primary">רענן עכשיו</button>
+      <button id="theme" aria-label="החלפת ערכת נושא" title="בהיר / כהה">◐</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="setup" class="setup" hidden>
+      <h2>עוד לא חובר אף חשבון</h2>
+      <p class="sec-note">כדי שהנתונים יתעדכנו לבד, צריך למלא פרטי התחברות בקובץ <code>.env</code> שיושב אצלך במחשב בלבד.</p>
+      <ol>
+        <li>העתק את <code>.env.example</code> ל־<code>.env</code></li>
+        <li>מלא <code>POALIM_USER_CODE</code> ו־<code>POALIM_PASSWORD</code> (ואם יש, גם כרטיסי אשראי)</li>
+        <li>הרץ <code>npm run collect</code> — או פשוט לחץ "רענן עכשיו" למעלה</li>
+      </ol>
+    </section>
+
+    <div class="tiles" id="tiles"></div>
+
+    <section id="forecast-sec">
+      <div class="sec-head">
+        <h2>לאן החודש הולך</h2>
+        <div class="head-spacer"></div>
+        <span class="pill" id="forecast-day"></span>
+      </div>
+      <p class="sec-note" id="forecast-note"></p>
+      <div class="chart" id="forecast-chart"></div>
+    </section>
+
+    <section>
+      <div class="sec-head">
+        <h2>הכנסות מול הוצאות</h2>
+        <div class="head-spacer"></div>
+        <button class="linkish" id="toggle-monthly-table">הצג כטבלה</button>
+      </div>
+      <p class="sec-note">12 החודשים האחרונים. חיובי כרטיס אשראי מרוכזים והעברות פנימיות אינם נספרים כהוצאה.</p>
+      <div class="legend">
+        <span><i class="swatch" style="background: var(--series-1)"></i>הוצאות</span>
+        <span><i class="swatch" style="background: var(--series-2)"></i>הכנסות</span>
+      </div>
+      <div class="chart" id="monthly-chart"></div>
+      <div class="table-scroll" id="monthly-table" hidden></div>
+    </section>
+
+    <section>
+      <div class="sec-head">
+        <h2>לאן הכסף הלך</h2>
+        <div class="head-spacer"></div>
+        <span class="pill" id="cat-month"></span>
+      </div>
+      <p class="sec-note">פילוח ההוצאות לפי קטגוריה בחודש שנבחר.</p>
+      <div class="chart" id="category-chart"></div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>דברים ששווה להסתכל עליהם</h2></div>
+      <p class="sec-note">חיובים חריגים ביחס לקטגוריה שלהם, חיובים כפולים, ומנויים שהתייקרו.</p>
+      <div class="alerts" id="alerts"></div>
+    </section>
+
+    <section>
+      <div class="sec-head">
+        <h2>הוצאות קבועות ומנויים</h2>
+        <div class="head-spacer"></div>
+        <span class="pill" id="fixed-total"></span>
+      </div>
+      <p class="sec-note">חיובים שחוזרים על עצמם במרווח קבוע. "רדום" = לא חויב כבר יותר מסבב וחצי, אולי בוטל.</p>
+      <div class="table-scroll" id="recurring-table"></div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>כל התנועות</h2></div>
+      <div class="filters">
+        <select id="filter-category" aria-label="סינון לפי קטגוריה"></select>
+        <select id="filter-source" aria-label="סינון לפי מקור"></select>
+        <input type="search" id="filter-search" placeholder="חיפוש בתיאור…" aria-label="חיפוש בתיאור">
+        <span class="pill" id="txn-count"></span>
+      </div>
+      <div class="table-scroll" id="txn-table"></div>
+    </section>
+  </main>
+
+  <div class="tooltip" id="tooltip" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
