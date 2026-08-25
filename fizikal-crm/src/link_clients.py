@@ -30,9 +30,24 @@ COMPANIES = ROOT / "data" / "fizikal_crm_handoff" / "data" / "Fizikal_CRM_מקו
 TIER_ORDER = {"VIP": 0, "גדול": 1, "בינוני": 2, "קטן": 3, "מוב": 4}
 
 
+JUNK_HP = re.compile(r"^(\d)\1*$|^0*1?234567?8?9?$|^0*1{2,}$")
+
+
 def pad(hp):
-    """ח.פ ל-9 ספרות. הייצוא שומר אותו כמספר ולכן אפסים מובילים נאכלים."""
-    return hp.zfill(9) if hp and hp != "0" else ""
+    """
+    ח.פ ל-9 ספרות, או '' אם הערך אינו ח.פ אמיתי.
+
+    בנתוני פיזיקל מוקלדים ערכי דמה בשדה הזה — 123456, 1, 11111, 1234567 —
+    ומכיוון שכמה חברות שונות חולקות את אותו ערך דמה, הצלבה לפיו מחברת
+    חברות זרות זו לזו. לקוח אחד ירש כך 44 סניפים של רשת אחרת.
+    ח.פ אמיתי הוא 8-9 ספרות משמעותיות.
+    """
+    if not hp:
+        return ""
+    core = hp.lstrip("0")
+    if len(core) < 8 or JUNK_HP.fullmatch(hp) or JUNK_HP.fullmatch(core):
+        return ""
+    return hp.zfill(9)
 
 
 def norm(t):
@@ -54,19 +69,24 @@ def read_companies():
     wb = openpyxl.load_workbook(COMPANIES, data_only=True)
     by_hp, by_name = defaultdict(set), defaultdict(set)
 
+    # המיפוי הוא לזוג (קוד חברה, מספר סניף) ולא לקוד לבדו: הח.פ יושב על הסניף,
+    # וזכיין שמפעיל סניף אחד ברשת חולק את קוד החברה של כל הרשת. בלי רזולוציית
+    # הסניף, לקוח שמפעיל סניף אחד יורש את כל 44 הסניפים של הרשת.
     ws = wb["סניפים"]
     idx = {c.value: n for n, c in enumerate(ws[1])}
     for r in ws.iter_rows(min_row=2, values_only=True):
         code = digits(r[idx["קוד חברה"]])
         if not code:
             continue
+        branch = digits(r[idx["מספר סניף"]])
         hp = pad(digits(r[idx["ח.פ"]]))
         if hp:
-            by_hp[hp].add(code)
+            by_hp[hp].add((code, branch))
         for col in ('שם בהנה"ח', "שם חברה", "שם סניף"):
             if norm(r[idx[col]]):
-                by_name[norm(r[idx[col]])].add(code)
+                by_name[norm(r[idx[col]])].add((code, branch))
 
+    # כרטיס החברה מקשר לחברה כולה — סניף ריק פירושו "כל הסניפים"
     ws2 = wb["חברות"]
     idx2 = {c.value: n for n, c in enumerate(ws2[1])}
     for r in ws2.iter_rows(min_row=2, values_only=True):
@@ -75,10 +95,10 @@ def read_companies():
             continue
         hp = pad(digits(r[idx2["ח.פ"]]))
         if hp:
-            by_hp[hp].add(code)
+            by_hp[hp].add((code, ""))
         for col in ('שם בהנה"ח', "שם חברה"):
             if norm(r[idx2[col]]):
-                by_name[norm(r[idx2[col]])].add(code)
+                by_name[norm(r[idx2[col]])].add((code, ""))
     return by_hp, by_name
 
 
@@ -124,9 +144,35 @@ def link(clients, hps, names, of_sap, by_hp, by_name):
                 if norm(name) in by_name:
                     codes |= by_name[norm(name)]
                     how = "שם"
+
+        # ח.פ אחד יכול להופיע אצל כמה חברות בפיזיקל. במקרה כזה השם מכריע —
+        # בלי זה הלקוח יורש את כל הסניפים של כל החברות שחולקות את הח.פ.
+        if len(codes) > 1:
+            fam_names = {norm(n) for n in names.get(key, set()) | {c["name"]}}
+            by_name_codes = set()
+            for nm in fam_names:
+                by_name_codes |= by_name.get(nm, set())
+            narrowed = codes & by_name_codes
+            if narrowed:
+                codes, how = narrowed, how + " + שם"
+            else:
+                how += " (עמום)"
+
         if codes:
-            out[c["sap"]] = {"codes": sorted(codes), "how": how, "tier": c["tier"],
-                             "name": c["name"], "ret": c["ret"], "status": c["status"]}
+            # רזולוציה פר-קוד, לפי הלוגיקה שנסגרה עם משה: הסניף הוא הרזולוציה.
+            # התאמה לסניף ספציפי גוברת על התאמת כרטיס-החברה של אותו קוד — אחרת
+            # זכיין שמפעיל סניף אחד ברשת יורש את כל אנשי הרשת. כרטיס החברה
+            # ("כל הסניפים") תקף רק לקוד שאין לו אף התאמת סניף.
+            scope = {}
+            for code, br in codes:
+                scope.setdefault(code, set())
+                if br:
+                    scope[code].add(br)
+            out[c["sap"]] = {
+                "codes": sorted(scope),
+                "scope": {code: (sorted(brs) if brs else ["*"]) for code, brs in scope.items()},
+                "how": how, "tier": c["tier"], "name": c["name"],
+                "ret": c["ret"], "status": c["status"]}
     return out
 
 
