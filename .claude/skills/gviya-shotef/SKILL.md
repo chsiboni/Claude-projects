@@ -24,6 +24,16 @@ needed — the sync stamps `משך חוב` (oldest month carrying money) and
 other inputs. The debt is within terms when (end of the oldest invoice's
 month + N shotef days) has not passed yet.
 
+## When this runs
+
+**Every weekly sync, without being asked.** Chen's standing instruction (30.08):
+the shotef check is part of processing each new aging report, not a separate
+request. Order of a weekly run: sync the report diff → run this check in both
+directions → present both to Chen → apply after approval. Skipping it lets
+not-yet-due debt sit in the reps' funnel and, worse, lets debt-notice campaigns
+target clients whose invoices are not due — that happened on 23.08 and had to
+be undone.
+
 ## Workflow
 
 `references/context.md` has the column ids, stage indexes, and the
@@ -43,8 +53,10 @@ apply-agent prompt template.
    Prints three lists and writes the move plan; never writes to monday:
    - ✅ within terms and not yet in the stage → candidates
    - ✔ already in the stage and still within terms → validation only
-   - ⏰ in the stage but now past due → surface to Chen; moving a card *back*
-     to the funnel is his or the reps' call, never automatic
+   - ⏰ in the stage but now past due → move back to `לקוח בחוב` (index 1) so
+     it re-enters the funnel. Approved as standing practice on 30.08, when 16
+     cards were found parked in the stage months past due — including one from
+     February at ₪70,793. Still show Chen the list before applying.
 
 3. **Show Chen, then stop — every run, including repeats.** Two cautions to
    apply before he approves:
