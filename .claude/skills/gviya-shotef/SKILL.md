@@ -21,8 +21,12 @@ is from last month is simply not due yet, and leaving them in `לקוח בחוב
 buries the reps' funnel in non-work. The board already carries everything
 needed — the sync stamps `משך חוב` (oldest month carrying money) and
 `תנאי תשלום` on every card — so this is a pure board pass: no aging file, no
-other inputs. The debt is within terms when (end of the oldest invoice's
-month + N shotef days) has not passed yet.
+other inputs — BUT classify per invoice, never per client from the oldest
+month alone. A client is "in shotef" only when **not a single shekel** of
+their debt is past its due date (end of the invoice's month + N shotef days).
+Chen's ruling, 01.09: "אין צדק ואין כלום — כל מי שבחוב, גם על שקל." No grace
+days, no amount floor. Earlier drafts with a 7-day grace and a ₪1,000 floor
+were rejected.
 
 ## When this runs
 
@@ -53,10 +57,17 @@ apply-agent prompt template.
    Prints three lists and writes the move plan; never writes to monday:
    - ✅ within terms and not yet in the stage → candidates
    - ✔ already in the stage and still within terms → validation only
-   - ⏰ in the stage but now past due → move back to `לקוח בחוב` (index 1) so
-     it re-enters the funnel. Approved as standing practice on 30.08, when 16
-     cards were found parked in the stage months past due — including one from
-     February at ₪70,793. Still show Chen the list before applying.
+   - ⏰ in the stage with any overdue shekel → move back to `לקוח בחוב` so it
+     re-enters the funnel. Standing practice since 30.08.
+   - **Precedence rule (01.09):** the check moves cards only between
+     `לקוח בחוב` ↔ `חוב בתחום שוטף`. A card a rep or another rule placed
+     elsewhere (`המתנה לתשלום`, `פניה ראשונה`, `בחינת הנהלה`…) is never
+     touched, even if none of its debt is due — the stage was chosen for a
+     reason (e.g. partial payment = active conversation). Example that forced
+     the rule: פלאקארד, ₪25k not yet due, sitting in המתנה לתשלום after paying
+     half.
+   - Set `מצב יתרה` to `תחום שוטף` for every card in the stage — the column
+     otherwise says "יש חוב" and reps read it as a contradiction (Yasmin, 30.08).
 
 3. **Show Chen, then stop — every run, including repeats.** Two cautions to
    apply before he approves:
@@ -67,9 +78,17 @@ apply-agent prompt template.
      file, card updates mentioning החזרים, or a suspiciously fresh משך חוב on
      a client who has been in debt for weeks) — point it out and let Chen
      decide. Never silently move such a client.
+   - **Stale board fields:** until 01.09 the sync refreshed משך חוב / ימי חוב /
+     עודכן מדוח only on cards whose amount changed, so the board's oldest-month
+     field could lag by weeks (נווה שרת showed 02/26 while the report said
+     07/26). Since 01.09 every card is refreshed on every sync — but when the
+     aging XLSX is at hand, classify from its buckets, not from the board.
+   - **Reissued invoices:** a bucket can vanish between reports (נווה אליעזר's
+     "May" invoice was gone a day later). When a rep disputes a date, trust
+     the newest report and, if still disputed, ask finance at invoice level.
    - **Negative buckets:** the sync sets משך חוב from any nonzero bucket,
      including negative ones, so a card can show an ancient משך חוב because of
-     an old credit. Mainly affects the ⏰ list — mention it when relevant.
+     an old credit.
 
 4. **Apply in the background** after explicit approval, using the prompt
    template in `references/context.md`. Chen may drop or add clients first —
@@ -80,8 +99,8 @@ apply-agent prompt template.
 
 ## Hard rules
 
-- The stage move is the ONLY write. Never touch `חוב` (numeric_mm69dbtr),
-  `מצב יתרה` (color_mm69xcy2 — sync-owned), `נציגה`, or any text column.
+- Writes allowed: `שלב` and `מצב יתרה` (label `תחום שוטף`). Never touch `חוב`
+  (numeric_mm69dbtr), `נציגה`, or any text column.
 - Terms: "שוטף N"/"ש+N" → due N days after invoice-month end; הו"ק and empty
   terms → due at month end (N=0); empty terms are flagged ⚠ in the output.
 - משך חוב of "…(שנה קודמת)" or "שנים קודמות" is overdue by definition.
