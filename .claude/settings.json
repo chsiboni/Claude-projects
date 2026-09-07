@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__monday_com__all_api_read",
+      "mcp__monday_com__get_monday_knowledge",
+      "mcp__monday_com__execute_code",
+      "mcp__monday_com__all_api_write"
+    ]
+  }
+}
