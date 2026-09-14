@@ -70,6 +70,17 @@ def main():
                      pick["name"] if pick else "", pick["role"] if pick else "",
                      pick["phone"] if pick else "", pick["email"] if pick else "", b["address"], note])
 
+    # לקוחות פעילים שלא קושרו למערכת Fizikal (הבירור): אין סניף/מקבל — שורה אחת ללקוח, עם טלפון/מייל מבורד הגביה אם יש
+    gviya = {r[1]: r for r in json.load(open(OUT / f"collections_{a.tag}.json", encoding="utf-8"))}   # [name, sap, ?, phone, email]
+    all_clients = json.load(open(OUT / f"clients_status_2026-07.json", encoding="utf-8"))
+    n_linked = len(rows)
+    for c in sorted(all_clients, key=lambda c: c["name"]):
+        if c["sap"] in clients or c["status"] == "לא פעיל":
+            continue
+        g = gviya.get(c["sap"], ["", "", "", "", ""])
+        rows.append([c["name"], c["tier"], c["status"], "", "", "", "", "", g[3], g[4], "",
+                     "לא מקושר למערכת Fizikal — להשלים מקבל וכתובת" + ("" if g[3] or g[4] else " · אין פרטי קשר גם בגביה")])
+
     wb = openpyxl.Workbook(); ws = wb.active; ws.title = "מתנות"
     ws.sheet_view.rightToLeft = True
     ws.append(HEAD)
@@ -85,7 +96,8 @@ def main():
     wb.save(out)
 
     n = len(rows); ok = sum(1 for r in rows if r[6] and r[8] and r[10])
-    print(f"{out.name}: {n} סניפים · {ok} מוכנים למשלוח (יש מקבל + נייד + כתובת)")
+    print(f"{out.name}: {n} שורות = {n_linked} סניפים + {n - n_linked} לקוחות לא מקושרים · {ok} מוכנים למשלוח (יש מקבל + נייד + כתובת)")
+    print(f"  לא מקושרים עם טלפון/מייל מהגביה: {sum(1 for r in rows[n_linked:] if r[8] or r[9])}")
     print(f"  בלי איש קשר: {sum(1 for r in rows if not r[6])} · בלי נייד: {sum(1 for r in rows if r[6] and not r[8])} · בלי כתובת: {sum(1 for r in rows if not r[10])}")
     print(f"  לקוחות: {len({r[0] for r in rows})} · לפי דרגה: " + ", ".join(f"{t} {sum(1 for r in rows if r[1]==t)}" for t in ("VIP", "גדול", "בינוני", "קטן", "מוב")))
 
