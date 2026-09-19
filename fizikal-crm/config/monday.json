@@ -156,7 +156,7 @@
       "inactive_after_months": 3,
       "_status_rule": "החלטת Chen 09/09/2026: שילם החודש=פעיל · 1-2 חודשים בלי ריטיינר=בסיכון · 3+=לא פעיל · חודש ראשון=חדש. היה 2, שונה ל-3.",
       "subitems": {
-        "_status": "ממתין לאישור Chen (14/09/2026). הבורד המקורי 5102514504 לא נגעו בו. אחרי אישור: הישן לארכיון, העותק מקבל את השם \"חברות\", ולעדכן פה את ה-id.",
+        "_status": "ממתין לבדיקה ואישור של Chen. הבורד המקורי \"חברות\" 5102514504 לא נגעו בו. אחרי אישור: הישן לארכיון, העותק מקבל את השם \"חברות\", ולעדכן פה את ה-id.",
         "copy_board": 5104135247,
         "copy_name": "חברות וסניפים",
         "copy_items": 436,
@@ -174,11 +174,13 @@
           "joined": "date_mm76vj52",
           "phone": "text_mm76mcv",
           "email": "text_mm76gqy5",
-          "address": "text_mm76c78e"
+          "address": "text_mm76c78e",
+          "sw_status_title": "סטטוס בתוכנה"
         },
         "_sw_status": "color_mm76bdb3 נקרא בהתחלה \"פעיל בתוכנה\"; בקשת Chen 14/09: \"משלם = פעיל\", אז שונה ל\"סטטוס בתוכנה\" (כן/לא לפי הדגל במערכת Fizikal). לאמת שהשינוי נכנס.",
-        "_target": "584 סאב-אייטמים (out/branch_subitems_2026-09.json). 14/09: הריצות נכשלו בשקט כי הסטטוס כן/לא לא היה קיים — צריך create_labels_if_missing:true. הריצה המתוקנת יצאה רגע לפני DAILY_LIMIT; כמות בפועל לא אומתה. פריט בדיקה 3222721298 (\"__test__\") אולי נשאר — למחוק.",
-        "_gift_list": "out/Fizikal_מתנות_השקה_2026-09.xlsx (src/gift_list.py): 551 סניפים + 42 לא מקושרים, 382 מוכנים למשלוח. נמסר ל-Chen 14/09."
+        "_target": "הושלם 19/09/2026: 585 סאב-אייטמים (כל שורה בבורד הסניפים שיש לה מספר סאפ — 586, פחות אחת שה-SAP שלה לא קיים בבורד החברות). 0 כפילויות.",
+        "_gift_list": "out/Fizikal_מתנות_השקה_2026-09.xlsx (src/gift_list.py): 551 סניפים + 42 לא מקושרים, 382 מוכנים למשלוח. נמסר ל-Chen 14/09.",
+        "_join": "המפתח בפועל: עמודת \"מספר סאפ\" text_mm6vwm4f בבורד הסניפים עצמו. אין צורך בקובץ מיפוי חיצוני — הסקריפט גוזר הכל מהבורדים."
       },
       "_renamed": "Chen שינה את שם הבורד מ\"לקוחות\" ל\"חברות\" (בין 11-14/09/2026)."
     },
@@ -427,7 +429,8 @@
     "excel_import_caps_at_8000": "ייבוא אקסל נעצר ב-8,000 שורות בדיוק, בשקט ובלי שגיאה. קובץ של 9,431 שורות נכנס עד 8,000 והשאר נעלם. חובה להשוות ספירה מול הקובץ אחרי כל ייבוא גדול, ולהשלים את היתרה בייבוא שני לאותו לוח.",
     "items_count_stale": "boards.items_count נשאר 8,000 אחרי ייבוא של 2,862 שורות — לא לסמוך עליו לאימות. לספור ב-items_page.",
     "import_can_double": "ייבוא אקסל של Chen נכנס פעמיים בהפרש 7 דקות (הודעת success אחת). אחרי כל ייבוא: סריקת כפילויות לפי (מס חברה, מספר עובד, שם).",
-    "create_labels_if_missing": "create_subitem/create_item עם עמודת status חדשה: בלי create_labels_if_missing:true הכתיבה נכשלת (\"label not found\"). 14/09 שתי ריצות של 584 נכשלו בשקט בגלל זה."
+    "create_labels_if_missing": "create_subitem/create_item עם עמודת status חדשה: בלי create_labels_if_missing:true הכתיבה נכשלת (\"label not found\"). 14/09 שתי ריצות של 584 נכשלו בשקט בגלל זה.",
+    "stale_approval_card": "execute_code נחסם עם \"approval was conditioned on edited arguments\" — קריאה חדשה נדחית עד הודעת משתמש חדשה. לעקוף עם all_api_write, או לחכות להודעה."
   },
   "field_formats": {
     "email": "{\"email\": \"a@b.com\", \"text\": \"a@b.com\"} — שני השדות חובה",
@@ -442,5 +445,6 @@
     "_note": "ה-CRM האמיתי של הצוות. לא עבדנו בו. בורדים רלוונטיים: גביה — גיול חובות (5102318900, 482) · Fizikal Leads & Sales (5100770106, 357) · fizikal onboarding 2026 (5093377026, 126) · Nir Miller AM (5094486333, 118) · Churn Fizikal (5095461328, 13) · אפסייל — מכירות חד פעמיות (5101329764, 0). שאלה פתוחה: לאחד את שכבת הכספים לכאן או להשאיר בנפרד."
   },
   "_linkage_gap": "246 מ-436 הלקוחות לא מקושרים לקוד חברה (₪270,747 ריטיינר חודשי, שליש מההכנסה), כולל אייקון פיטנס שהוא הלקוח הגדול ביותר. 127 עם ח.פ שלא נמצא בבורד הסניפים ו-119 בלי ח.פ בכלל. המסמך המקורי דיבר על 171 — הפער גדול יותר. נדרש ייצוא סניפים טרי מהמערכת של Fizikal.",
-  "_sandbox": "sandbox/ — קוד שרץ ב-execute_code של monday MCP (לא מקומי): sync_migration_subitems.py (אנשי קשר→סאב-אייטמים במעבר), build_clients_branches_board.py (עותק לקוחות + סניפים כסאב-אייטמים; קלט /tmp/branches.json = תמצית של out/branch_subitems_<tag>.json)."
+  "_sandbox": "sandbox/ — קוד שרץ ב-execute_code של monday MCP (לא מקומי): sync_migration_subitems.py (אנשי קשר→סאב-אייטמים במעבר), build_clients_branches_board.py (עותק לקוחות + סניפים כסאב-אייטמים; קלט /tmp/branches.json = תמצית של out/branch_subitems_<tag>.json).",
+  "_container_reset": "19/09/2026: הקונטיינר אותחל ונוצר קלון טרי. data/ ו-out/ ב-gitignore ולכן נמחקו: קבצי ה-CSV של משה, כל ה-JSON והאקסלים (כולל רשימת המתנות). הקוד ב-src/ ו-sandbox/ שרד. לשחזור: Chen צריך להעלות שוב את branches.csv ו-employees.csv ל-data/moshe_2026-09/, ואז fresh_export.py → branch_subitems.py → gift_list.py."
 }
