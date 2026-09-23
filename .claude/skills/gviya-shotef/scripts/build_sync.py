@@ -9,12 +9,11 @@ Rules (approved 26.08–09.09):
   המתנה לתשלום with promised date passed and no balance drop → פניה שניה + 'הבטחה לא קוימה'
 """
 import sys, types, json, datetime, calendar, re, collections
-sys.modules['mon'] = types.SimpleNamespace(q=None, paged=None, cv=None)
-sys.path.insert(0, '/tmp/gviya/fizikal-gviya'); import sync
+sys.path.insert(0, __import__('os').path.dirname(__import__('os').path.abspath(__file__))); import sync_lib as sync
 
 REP, BOARD, OUT = sys.argv[1:4]
 name, rep, asof = sync.read_report(REP)
-board = json.load(open(BOARD))
+board = sync.board_from_dump(BOARD) if BOARD.endswith('_raw') or 'raw' in BOARD else json.load(open(BOARD))
 TODAY = datetime.date.fromisoformat(asof)
 D = TODAY.strftime('%d.%m.%y')
 LB, SH, PAID, NONE, WAIT, P2 = 'לקוח בחוב', 'חוב בתחום שוטף', 'בוצע תשלום', 'ללא חוב', 'המתנה לתשלום', 'פניה שניה'
