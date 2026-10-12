@@ -117,6 +117,20 @@ for cc,bs in act_cc.items():
         pr=people_rows(cc,b['_bn'],base,'פעיל במערכת, לא בדוח הכנסות')
         rows['לא מסווג']+=pr or [base+['','','','','','','','','','פעיל במערכת, לא בדוח הכנסות']]
 stats['unclassified_companies_from_system']=len(act_cc)
+# ---- collections board: SAP cards billed today but absent from the August list (and not a known family ח.פ)
+import os
+cm=os.path.join(os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else '.','collections_missing.json')
+try: COLM=json.load(open(cm,encoding='utf-8'))
+except Exception: COLM=[]
+CHAINS=['פרופיט','פיטפורלס','גרייט שייפ','סוויפט','מטי מועדוני','מגדלי הים התיכון','בארבור','אייקון פיטנס']
+for x in COLM:
+    chain=next((c for c in CHAINS if c in x['name']),'')
+    src='בורד גביה, לא בדוח הכנסות אוגוסט'+(f' (כנראה סניף של רשת {chain} שכבר ברשימה)' if chain else '')
+    extra=' · '.join(v for v in [x.get('phone',''),x.get('email','')] if v)
+    if extra: src+=' · פרטי קשר בגביה: '+extra
+    rows['לא מסווג'].append([norm(x['name']),norm(x.get('cc','')),norm(x['name']),'','','','פעיל','','','','','','',x['sap'],'','',src])
+stats['from_collections']=len(COLM)
+
 print('onboarding since May:',len(onb_may),dict(xc)); print(dict(stats))
 for k in TIERS+['לא מסווג']: print(k,len(rows[k]),'rows',len({(r[0],r[3]) for r in rows[k]}),'companies')
 # ---- write
@@ -143,7 +157,7 @@ lines=["רשימת לקוחות לאימות פרטי קשר — Fizikal, נתו
 "שורה = אדם בסניף. אדם שעובד בכמה סניפים מופיע בכמה שורות עם אותה ת.ז.",
 "13 העמודות הראשונות הן השדות שסיכמנו. 4 העמודות האפורות בסוף הן עזר: מספר הלקוח בהנה\"ח (המפתח לטעינה חזרה), ההרשאה והקבוצה כפי שרשומות היום במערכת, ומקור השורה.",
 "האנשים ברשימה הם ההנהלה בלבד, לפי ההרשאות במערכת פיזיקל (ייצוא 03/09/2026): ניהול חברה, הרשאת על, ומנהל בקבוצת הנהלה. שאר העובדים לא נכללו. 'תפקיד' תורגם מההרשאה: ניהול חברה/הרשאת על → הנהלה אחרת · מנהל+הנהלה → מנהל סניף · מנהל+קבלה → קבלה · מנהל משמרת → מנהל משמרת · השאר → אחר. המתקשר מאמת ומתקן.",
-"'לא מסווג': לקוחות מאונבורדינג שעלו לאוויר ממאי 2026 ולא נמצאו בדוח ההכנסות, ואחריהם כל חברה שפעילה במערכת אבל לא משלמת לפי דוח ההכנסות. עמודת 'מקור' אומרת מאיפה כל שורה.",
+"'לא מסווג': (1) לקוחות מאונבורדינג שעלו לאוויר ממאי 2026 ולא נמצאו בדוח ההכנסות, (2) כל חברה שפעילה במערכת אבל לא משלמת לפי דוח ההכנסות, (3) כרטיסי לקוח מבורד הגבייה שאינם בדוח אוגוסט. עמודת 'מקור' אומרת מאיפה כל שורה.",
 "'אומת בתאריך' ריק = השורה לא עברה שיחה."]
 for i,t in enumerate(lines,1):
     c=ws.cell(row=i,column=1,value=t); c.font=Font(name=F,bold=(i==1),size=11 if i>1 else 13); c.alignment=Alignment(wrap_text=True,vertical='top',horizontal='right'); ws.row_dimensions[i].height=34 if i>1 else 22
