@@ -1,4 +1,5 @@
-"""רשימת שיחות לאימות פרטי לקוחות — שורה ללקוח, 4 מועמדים ליצירת קשר לפי בכירות, וגיליון טופס מילוי ריק.
+"""רשימת שיחות לאימות פרטי לקוחות — לקוחות משלמים (דוח אוגוסט) + עלו לאוויר ממאי (אונבורדינג, לא ביטלו) + חדשים בגבייה.
+שורה ללקוח, 4 מועמדים ליצירת קשר לפי בכירות, וגיליון טופס מילוי ריק עם רמת לקוח ומספר לקוח.
 קלט: dump JSON.gz של ארבעה בורדים + collections.json / collections_missing.json מבורד הגבייה.
 הרצה: python3 src/call_list_2026.py <dump.json.gz>
 """
@@ -63,31 +64,36 @@ for co in comp:
     ccs=list(dict.fromkeys([norm(s.get('text_mm76nbjb')) for s in co.get('subitems',[]) if norm(s.get('text_mm76nbjb'))] or [b['_cc'] for b in SAPB.get(sap,[])]))
     linked.update(ccs)
     add(tier_of(co['group']),sap,norm(co['name']),state,norm(co['text_mm5ebgdf']),candidates(ccs,sap))
-LIVE={'אונבורדינג הסתיים','עלה לאוויר- ליווי חודש 1','ליווי חודש 2','באוויר - ממתין לסליקה','הדרכה 1','הדרכה 2','הדרכה עיכובים','ממתין להדרכה','שלבי הסבה (אופציונלי)','ממתין לסליקה (מכירות)','סיכום מכירה'}
-seen_cc=set()
+
+LEVEL={'move':'מוב','קטן':'קטן','בינוני':'בינוני','גדול':'גדול','VIP':'VIP'}
+nname=lambda t:re.sub(r'[^\w]','',(t or '').replace('בע"מ','').replace("בע'מ",'').replace('בעמ','')).lower()
+aug_names={nname(c['name']) for c in comp}
+onb_added=0; onb_dup=0
 for o in onb:
-    if not (o['date_mm2fvzsy']>='2026-05-01' or (not o['date_mm2fvzsy'] and o['status'] in LIVE and o['date4']>='2026-05-01')): continue
-    if o['status']=='ביטל עסקה': continue
-    cc=norm(o['text_mm2bb1bq'])
-    if cc and cc in linked: continue
-    if cc and cc in BRC: seen_cc.add(cc); add('לא מסווג',cc,norm(o['name']),'אונבורדינג מאי+','',candidates([cc]))
-    else: add('לא מסווג',cc,norm(o['name']),'אונבורדינג מאי+'+('' if cc else ', בלי מספר חברה'),'',[])
-act=C.defaultdict(list)
-for b in br:
-    if b['color_mm6vn3xc']=='פעיל' and b['_cc'] and b['_cc'] not in linked and b['_cc'] not in seen_cc: act[b['_cc']].append(b)
-for cc,bs in act.items(): add('לא מסווג',cc,norm(bs[0]['text_mm6vcn1r']) or norm(bs[0]['name']),'פעיל במערכת, לא בדוח הכנסות',norm(bs[0]['text_mm6vx83h']),candidates([cc]))
-CH=['פרופיט','פיטפורלס','גרייט שייפ','סוויפט','מטי מועדוני','מגדלי הים התיכון','בארבור','אייקון פיטנס']
+    if not o['date_mm2fvzsy']>='2026-05-01' or o['status']=='ביטל עסקה': continue
+    cc=norm(o['text_mm2bb1bq']); n=nname(o['name'])
+    if cc and cc in linked: onb_dup+=1; continue
+    if n and len(n)>=5 and any(n==k or (len(k)>=5 and (n in k or k in n)) for k in aug_names): onb_dup+=1; continue
+    lvl=LEVEL.get(norm(o['color_mm4azznn']),'')
+    sheet=lvl or 'קטן'
+    state='עלה לאוויר '+o['date_mm2fvzsy'][:7]+' ('+o['status']+')'+('' if lvl else ', רמה לא הוגדרה באונבורדינג')
+    hp=norm(BRC[cc][0]['text_mm6vx83h']) if cc and cc in BRC else ''
+    add(sheet,cc,norm(o['name']),state,hp,candidates([cc]) if cc and cc in BRC else [])
+    onb_added+=1
+col_new=0
 for m in COLM:
-    chain=next((c for c in CH if c in m['name']),''); p=clean(m['phone'])
-    add('לא מסווג',m['sap'],norm(m['name']),'בורד גביה, לא בדוח אוגוסט'+(f' (כנראה סניף של רשת {chain})' if chain else ''),norm(m.get('cc','')),[(m['email'] or 'הנה"ח','איש הכספים (מבורד גבייה)',p)] if okphone(p) else [])
+    if not m['sap'].startswith('3'): continue
+    if any(nname(m['name'])==nname(r[1]) for k in rows for r in rows[k]): continue
+    p=clean(m['phone']); add('קטן',m['sap'],norm(m['name']),'חדש בבורד הגבייה, לא בדוח אוגוסט',norm(m.get('cc','')),[(m['email'] or 'הנה"ח','איש הכספים (מבורד גבייה)',p)] if okphone(p) else []); col_new+=1
+print('onboarding added',onb_added,'skipped as already paying',onb_dup,'| new from collections',col_new)
 print(dict(st))
-for k in ['VIP','גדול','בינוני','קטן','מוב','לא מסווג']: print(k,len(rows[k]),'| 4 cands',sum(1 for r in rows[k] if r[13]),'| 0 cands',sum(1 for r in rows[k] if not r[4]))
+for k in ['VIP','גדול','בינוני','קטן','מוב']: print(k,len(rows[k]),'| 4 cands',sum(1 for r in rows[k] if r[13]),'| 0 cands',sum(1 for r in rows[k] if not r[4]))
 # ---------- write
 F='Arial'; wb=openpyxl.Workbook(); wb.remove(wb.active)
 thin=Side(style='thin',color='C9D1E0'); B=Border(top=thin,bottom=thin,left=thin,right=thin)
 HEAD=['מספר לקוח','שם הלקוח','מצב אצלנו','ח.פ']+[f'{t} {i}' for i in (1,2,3,4) for t in ('שם','תפקיד','טלפון')]+['סטטוס שיחה','דיברנו עם (שם ותפקיד)','תאריך','הערות']
 W=[11,30,20,12]+[18,16,13]*4+[14,24,11,30]
-for k in ['VIP','גדול','בינוני','קטן','מוב','לא מסווג']:
+for k in ['VIP','גדול','בינוני','קטן','מוב']:
     ws=wb.create_sheet(k); ws.sheet_view.rightToLeft=True
     for i,(h,w) in enumerate(zip(HEAD,W),1):
         c=ws.cell(row=1,column=i,value=h); c.font=Font(name=F,bold=True,color='FFFFFF')
@@ -104,18 +110,17 @@ for k in ['VIP','גדול','בינוני','קטן','מוב','לא מסווג']:
     ws.freeze_panes='C2'; ws.auto_filter.ref=f'A1:{openpyxl.utils.get_column_letter(len(HEAD))}{max(n,2)}'
 # fill form sheet
 ws=wb.create_sheet('טופס מילוי'); ws.sheet_view.rightToLeft=True
-FIELDS=['שם חברה','ח.פ','שם לחשבונית','מספר חברה','מספר סניף','שם סניף','סטטוס לקוח','שם מלא','תפקיד','ת.ז','מייל','טלפון','אומת בתאריך']
-ws['A1']='טופס מילוי — העתק לכל לקוח (שם הקובץ = מספר הלקוח). שורה לכל איש הנהלה בכל סניף.'; ws['A1'].font=Font(name=F,bold=True,size=12)
-ws['A2']='מספר לקוח:'; ws['B2']=''; ws['A2'].font=Font(name=F,bold=True)
-for i,(h,w) in enumerate(zip(FIELDS,[26,12,26,10,9,22,12,24,14,12,28,13,13]),1):
+FIELDS=['רמת לקוח','מספר לקוח','שם חברה','ח.פ','שם לחשבונית','מספר חברה','מספר סניף','שם סניף','סטטוס לקוח','שם מלא','תפקיד','ת.ז','מייל','טלפון','אומת בתאריך']
+ws['A1']='טופס מילוי — העתק לכל לקוח (שם הקובץ = מספר הלקוח). שורה לכל איש הנהלה בכל סניף. רמת לקוח ומספר לקוח מועתקים מרשימת השיחות.'; ws['A1'].font=Font(name=F,bold=True,size=12)
+for i,(h,w) in enumerate(zip(FIELDS,[11,11,26,12,26,10,9,22,12,24,14,12,28,13,13]),1):
     c=ws.cell(row=4,column=i,value=h); c.font=Font(name=F,bold=True,color='FFFFFF'); c.fill=PatternFill('solid',fgColor='1F2A44'); c.alignment=Alignment(horizontal='center',vertical='center',wrap_text=True); c.border=B
     ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width=w
     for r in range(5,25): ws.cell(row=r,column=i).border=B
-dv=DataValidation(type='list',formula1='"בעלים,מנהל סניף,הנהלה אחרת,קבלה,מנהל משמרת,אחר"',allow_blank=True); ws.add_data_validation(dv); dv.add('I5:I200')
-dv2=DataValidation(type='list',formula1='"פעיל,לא פעיל"',allow_blank=True); ws.add_data_validation(dv2); dv2.add('G5:G200')
+dv=DataValidation(type='list',formula1='"בעלים,מנהל סניף,הנהלה אחרת,קבלה,מנהל משמרת,אחר"',allow_blank=True); ws.add_data_validation(dv); dv.add('K5:K200')
+dv2=DataValidation(type='list',formula1='"פעיל,לא פעיל"',allow_blank=True); ws.add_data_validation(dv2); dv2.add('I5:I200')
 ws=wb.create_sheet('הסבר',0); ws.sheet_view.rightToLeft=True; ws.column_dimensions['A'].width=115
 L=["רשימת שיחות לאימות פרטי לקוחות — Fizikal, 12/10/2026",
-"גיליון לכל רמת לקוח לפי דוח ההכנסות אוגוסט 2026 (VIP · גדול · בינוני · קטן · מוב), ו'לא מסווג' למי שלא בדוח: אונבורדינג שעלה לאוויר ממאי, חברות פעילות במערכת בלי תשלום, וכרטיסים מבורד הגבייה.",
+"גיליון לכל רמת לקוח (VIP · גדול · בינוני · קטן · מוב). בכל גיליון: הלקוחות מדוח ההכנסות אוגוסט 2026, ואחריהם לקוחות שעלו לאוויר ממאי 2026 לפי בורד האונבורדינג ולא ביטלו (רמה לפי האונבורדינג). עמודת 'מצב אצלנו' אומרת מאיפה כל שורה.",
 "שורה = לקוח. לכל לקוח עד 4 מועמדים ליצירת קשר, מהבכיר לפחות בכיר: ניהול חברה → הרשאת על → מנהל בהנהלה → מנהל → טלפון הסניף → איש הכספים. מתחילים ממועמד 1.",
 "התהליך: מתקשרים, מבקשים את מי שמנהל את הפעילות (המנהל הבכיר ביותר שניתן להשיג). מולו ממלאים את 'טופס מילוי' (העתק לכל לקוח, שם הקובץ = מספר הלקוח): שורה לכל איש הנהלה בכל סניף. בסוף מעדכנים בשורת הלקוח: סטטוס שיחה, עם מי דיברנו, תאריך.",
 "הנתונים שלנו (שמות, טלפונים) הם רק כדי להגיע לאדם הנכון. לא מעתיקים אותם לטופס. המנהל ממלא הכול מחדש.",
