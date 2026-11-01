@@ -210,7 +210,7 @@ def main():
     p = argparse.ArgumentParser(description="סטטוס פעיל/לא-פעיל של לקוחות Fizikal")
     p.add_argument("--file", required=True, help="נתיב לדוח ההכנסות")
     p.add_argument("--month", required=True, help="חודש היעד, למשל 2026-07")
-    p.add_argument("--inactive-after", type=int, default=2,
+    p.add_argument("--inactive-after", type=int, default=3,
                    help="חודשים רצופים ללא ריטיינר עד סימון 'לא פעיל' (ברירת מחדל 2)")
     args = p.parse_args()
 

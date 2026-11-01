@@ -160,12 +160,11 @@ def resolve_hp_by_sap(rows, layout):
 
 
 def open_sheet(path):
-    if not path.exists():
-        sys.exit(
-            f"לא נמצא: {path}\n"
-            f"הקבצים הרגישים לא בגיט — צריך להעלות את הדוח ל-{DATA}/ בכל סשן."
-        )
-    return openpyxl.load_workbook(path, data_only=True).active
+    """פותח את גיליון ההכנסות. מנובמבר 2026 הדוח מגיע כחוברת של כל הארגון, ולכן בוחרים לפי שם
+    הגיליון מהקונפיג (layout.sheet_name); אם אין גיליון כזה — הגיליון הפעיל, כמו קודם."""
+    wb = openpyxl.load_workbook(path, data_only=True)
+    name = load_config()[0]["layout"].get("sheet_name")
+    return wb[name] if name and name in wb.sheetnames else wb.active
 
 
 def inspect(path, layout):
